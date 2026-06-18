@@ -1,0 +1,25 @@
+{
+  "name": "si-tech-calculator",
+  "version": "1.0.0",
+  "description": "Space Engineers tech resource calculator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --windows nsis"
+  },
+  "build": {
+    "appId": "com.sitechcalculator.app",
+    "productName": "SI Tech Calculator",
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "SI-Tech-Calculator-${version}.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.1"
+  }
+}

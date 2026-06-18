@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SI Tech Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>SI Tech Calculator</h1>
+    <div class="controls">
+      <label for="tech">Tech Type</label>
+      <select id="tech">
+        <option>Common Tech</option>
+        <option>Rare Tech</option>
+        <option>Exotic Tech</option>
+        <option>Prosonic Tech</option>
+        <option>Tellurium Tech</option>
+      </select>
+
+      <label for="qty">Quantity</label>
+      <input id="qty" type="number" min="1" value="1">
+
+      <button id="calc">Calculate</button>
+    </div>
+
+    <section id="results">
+      <h2>Required Resources</h2>
+      <div id="output"></div>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
