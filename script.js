@@ -184,26 +184,30 @@ Object.keys(oreDefs).forEach(name => {
   oreSelect.appendChild(option)
 })
 
-const refinerySelect = document.getElementById('refinery')
+const baseRateInput = document.getElementById('base-rate')
+const speedModifierInput = document.getElementById('speed-modifier')
 const yieldModifierInput = document.getElementById('yield-modifier')
-
-refinerySelect.addEventListener('change', () => {
-  if (refinerySelect.value !== 'custom') yieldModifierInput.value = refinerySelect.value
-  yieldModifierInput.focus()
-})
 
 document.getElementById('ore-calc').addEventListener('click', () => {
   const oreName = oreSelect.value
   const ore = oreDefs[oreName]
   const amount = Math.max(0, Number(document.getElementById('ore-amount').value) || 0)
+  const baseRate = Math.max(0, Number(baseRateInput.value) || 0)
+  const speedModifier = Math.max(0, Number(speedModifierInput.value) || 0)
   const modifier = Math.max(0, Number(yieldModifierInput.value) || 0)
   const output = document.getElementById('ore-output')
   const ingots = amount * ore.baseYield * modifier
+  const effectiveRate = baseRate * speedModifier
+  const refiningSeconds = effectiveRate > 0 ? amount / effectiveRate : null
 
   output.innerHTML = ''
   const frag = document.createDocumentFragment()
   addSection(frag, 'Refining Calculation', [
     ['Ore input', `${formatNumber(amount)} kg of ${oreName}`],
+    ['Base refining rate', `${formatNumber(baseRate)} kg ore/s`],
+    ['Refining speed modifier', `${formatNumber(speedModifier * 100)}%`],
+    ['Effective refining rate', `${formatNumber(effectiveRate)} kg ore/s`],
+    ['Estimated refining time', refiningSeconds === null ? 'Enter a speed above 0' : formatDuration(refiningSeconds)],
     ['Base conversion', `${formatNumber(ore.baseYield)} kg ${ore.ingot} per kg ore`],
     ['Refinery yield modifier', `${formatNumber(modifier * 100)}%`],
     ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]
