@@ -46,6 +46,29 @@ const oreDefs = {
   'Uranium Ore': { ingot: 'Uranium Ingot', baseYield: 0.007 }
 }
 
+const refineryDefs = {
+  Refinery: { ingotsPerOre: 0.00996, ingotsPerSecond: 0.012, powerMw: 0.56, reactorCost: 0.01 },
+  Enhanced: { ingotsPerOre: 0.01045, ingotsPerSecond: 0.022, powerMw: 0.98, reactorCost: 0.0105 },
+  Proficient: { ingotsPerOre: 0.011, ingotsPerSecond: 0.041, powerMw: 1.72, reactorCost: 0.011 },
+  Elite: { ingotsPerOre: 0.01199, ingotsPerSecond: 0.079, powerMw: 3, reactorCost: 0.012 },
+  Prosonic: { ingotsPerOre: 0.01301, ingotsPerSecond: 0.2, powerMw: 300, reactorCost: 0.013 },
+  Tellurium: { ingotsPerOre: 0.01403, ingotsPerSecond: 0.342, powerMw: 400, reactorCost: 0.014 }
+}
+
+const yieldModuleDefs = {
+  None: 1,
+  Regular: 1.091,
+  Prosonic: 1.133,
+  Tellurium: 1.212
+}
+
+const speedModuleDefs = {
+  None: 0,
+  Regular: 0.5,
+  Prosonic: 1.65,
+  Tellurium: 1.95
+}
+
 function formatNumber(n){
   return n.toLocaleString(undefined, {maximumFractionDigits: 2})
 }
@@ -184,32 +207,45 @@ Object.keys(oreDefs).forEach(name => {
   oreSelect.appendChild(option)
 })
 
-const baseRateInput = document.getElementById('base-rate')
-const speedModifierInput = document.getElementById('speed-modifier')
-const yieldModifierInput = document.getElementById('yield-modifier')
+function populateSelect(selectId, values) {
+  const select = document.getElementById(selectId)
+  Object.keys(values).forEach(name => {
+    const option = document.createElement('option')
+    option.value = name
+    option.textContent = name
+    select.appendChild(option)
+  })
+  return select
+}
+
+const refineryTierSelect = populateSelect('refinery-tier', refineryDefs)
+const yieldModuleSelect = populateSelect('yield-module', yieldModuleDefs)
+const speedModuleSelect = populateSelect('speed-module', speedModuleDefs)
 
 document.getElementById('ore-calc').addEventListener('click', () => {
   const oreName = oreSelect.value
   const ore = oreDefs[oreName]
+  const refinery = refineryDefs[refineryTierSelect.value]
   const amount = Math.max(0, Number(document.getElementById('ore-amount').value) || 0)
-  const baseRate = Math.max(0, Number(baseRateInput.value) || 0)
-  const speedModifier = Math.max(0, Number(speedModifierInput.value) || 0)
-  const modifier = Math.max(0, Number(yieldModifierInput.value) || 0)
+  const yieldCount = Math.max(0, Math.floor(Number(document.getElementById('yield-count').value) || 0))
+  const speedCount = Math.max(0, Math.floor(Number(document.getElementById('speed-count').value) || 0))
+  const yieldMultiplier = yieldModuleDefs[yieldModuleSelect.value] ** yieldCount
+  const speedMultiplier = 1 + (speedModuleDefs[speedModuleSelect.value] * speedCount)
   const output = document.getElementById('ore-output')
-  const ingots = amount * ore.baseYield * modifier
-  const effectiveRate = baseRate * speedModifier
-  const refiningSeconds = effectiveRate > 0 ? amount / effectiveRate : null
+  const ingots = amount * refinery.ingotsPerOre * yieldMultiplier
+  const effectiveRate = refinery.ingotsPerSecond * yieldMultiplier * speedMultiplier
+  const refiningSeconds = amount * refinery.ingotsPerOre / (refinery.ingotsPerSecond * speedMultiplier)
 
   output.innerHTML = ''
   const frag = document.createDocumentFragment()
   addSection(frag, 'Refining Calculation', [
     ['Ore input', `${formatNumber(amount)} kg of ${oreName}`],
-    ['Base refining rate', `${formatNumber(baseRate)} kg ore/s`],
-    ['Refining speed modifier', `${formatNumber(speedModifier * 100)}%`],
-    ['Effective refining rate', `${formatNumber(effectiveRate)} kg ore/s`],
-    ['Estimated refining time', refiningSeconds === null ? 'Enter a speed above 0' : formatDuration(refiningSeconds)],
-    ['Base conversion', `${formatNumber(ore.baseYield)} kg ${ore.ingot} per kg ore`],
-    ['Refinery yield modifier', `${formatNumber(modifier * 100)}%`],
+    ['Refinery tier', refineryTierSelect.value],
+    ['Base conversion', `${formatNumber(refinery.ingotsPerOre)} kg ${ore.ingot} per kg ore`],
+    ['Yield modules', `${yieldCount} × ${yieldModuleSelect.value} (${formatNumber(yieldMultiplier * 100)}% output)`],
+    ['Speed modules', `${speedCount} × ${speedModuleSelect.value} (${formatNumber(speedMultiplier * 100)}% speed)`],
+    ['Effective ingot rate', `${formatNumber(effectiveRate)} kg ${ore.ingot}/s`],
+    ['Estimated refining time', formatDuration(refiningSeconds)],
     ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]
   ])
   output.appendChild(frag)
