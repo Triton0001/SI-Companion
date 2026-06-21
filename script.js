@@ -32,6 +32,20 @@ const assembler = {
   uraniumGramsPerMwSecond: 3.59
 }
 
+// Base vanilla refinery conversion rates, expressed as ingots per kilogram of ore.
+// The refinery modifier is applied on top, so modded refinery values can be entered directly.
+const oreDefs = {
+  'Iron Ore': { ingot: 'Iron Ingot', baseYield: 0.7 },
+  'Nickel Ore': { ingot: 'Nickel Ingot', baseYield: 0.4 },
+  'Silicon Ore': { ingot: 'Silicon Wafer', baseYield: 0.7 },
+  'Cobalt Ore': { ingot: 'Cobalt Ingot', baseYield: 0.3 },
+  'Magnesium Ore': { ingot: 'Magnesium Powder', baseYield: 0.007 },
+  'Silver Ore': { ingot: 'Silver Ingot', baseYield: 0.1 },
+  'Gold Ore': { ingot: 'Gold Ingot', baseYield: 0.01 },
+  'Platinum Ore': { ingot: 'Platinum Ingot', baseYield: 0.005 },
+  'Uranium Ore': { ingot: 'Uranium Ingot', baseYield: 0.007 }
+}
+
 function formatNumber(n){
   return n.toLocaleString(undefined, {maximumFractionDigits: 2})
 }
@@ -161,4 +175,54 @@ document.getElementById('calc').addEventListener('click', () => {
 
   out.appendChild(frag)
 })
+
+const oreSelect = document.getElementById('ore')
+Object.keys(oreDefs).forEach(name => {
+  const option = document.createElement('option')
+  option.value = name
+  option.textContent = name
+  oreSelect.appendChild(option)
+})
+
+const refinerySelect = document.getElementById('refinery')
+const yieldModifierInput = document.getElementById('yield-modifier')
+
+refinerySelect.addEventListener('change', () => {
+  if (refinerySelect.value !== 'custom') yieldModifierInput.value = refinerySelect.value
+  yieldModifierInput.focus()
+})
+
+document.getElementById('ore-calc').addEventListener('click', () => {
+  const oreName = oreSelect.value
+  const ore = oreDefs[oreName]
+  const amount = Math.max(0, Number(document.getElementById('ore-amount').value) || 0)
+  const modifier = Math.max(0, Number(yieldModifierInput.value) || 0)
+  const output = document.getElementById('ore-output')
+  const ingots = amount * ore.baseYield * modifier
+
+  output.innerHTML = ''
+  const frag = document.createDocumentFragment()
+  addSection(frag, 'Refining Calculation', [
+    ['Ore input', `${formatNumber(amount)} kg of ${oreName}`],
+    ['Base conversion', `${formatNumber(ore.baseYield)} kg ${ore.ingot} per kg ore`],
+    ['Refinery yield modifier', `${formatNumber(modifier * 100)}%`],
+    ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]
+  ])
+  output.appendChild(frag)
+})
+
+document.querySelectorAll('[role="tab"]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[role="tab"]').forEach(button => {
+      const active = button === tab
+      button.classList.toggle('is-active', active)
+      button.setAttribute('aria-selected', active)
+    })
+    document.querySelectorAll('.tool-panel').forEach(panel => {
+      panel.hidden = panel.id !== tab.dataset.tab
+    })
+  })
+})
+
+document.getElementById('ore-calc').click()
 
