@@ -32,8 +32,8 @@ const assembler = {
   uraniumGramsPerMwSecond: 3.59
 }
 
-// Base vanilla refinery conversion rates, expressed as ingots per kilogram of ore.
-// The refinery modifier is applied on top, so modded refinery values can be entered directly.
+// Base refinery conversion rates, expressed as ingots per kilogram of ore.
+// Refinery tiers change throughput and power draw, not the ore-to-ingot ratio.
 const oreDefs = {
   'Iron Ore': { ingot: 'Iron Ingot', baseYield: 0.7 },
   'Nickel Ore': { ingot: 'Nickel Ingot', baseYield: 0.4 },
@@ -43,21 +43,21 @@ const oreDefs = {
   'Silver Ore': { ingot: 'Silver Ingot', baseYield: 0.1 },
   'Gold Ore': { ingot: 'Gold Ingot', baseYield: 0.01 },
   'Platinum Ore': { ingot: 'Platinum Ingot', baseYield: 0.005 },
-  'Uranium Ore': { ingot: 'Uranium Ingot', baseYield: 0.007 }
+  'Uranium Ore': { ingot: 'Uranium Ingot', baseYield: 0.01 }
 }
 
 const refineryDefs = {
-  Refinery: { ingotsPerOre: 0.00996, ingotsPerSecond: 0.012, powerMw: 0.56, reactorCost: 0.01 },
-  Enhanced: { ingotsPerOre: 0.01045, ingotsPerSecond: 0.022, powerMw: 0.98, reactorCost: 0.0105 },
-  Proficient: { ingotsPerOre: 0.011, ingotsPerSecond: 0.041, powerMw: 1.72, reactorCost: 0.011 },
-  Elite: { ingotsPerOre: 0.01199, ingotsPerSecond: 0.079, powerMw: 3, reactorCost: 0.012 },
-  Prosonic: { ingotsPerOre: 0.01301, ingotsPerSecond: 0.2, powerMw: 300, reactorCost: 0.013 },
-  Tellurium: { ingotsPerOre: 0.01403, ingotsPerSecond: 0.342, powerMw: 400, reactorCost: 0.014 }
+  Refinery: { ingotsPerSecond: 0.012, powerMw: 0.56, reactorCost: 0.01 },
+  Enhanced: { ingotsPerSecond: 0.022, powerMw: 0.98, reactorCost: 0.0105 },
+  Proficient: { ingotsPerSecond: 0.041, powerMw: 1.72, reactorCost: 0.011 },
+  Elite: { ingotsPerSecond: 0.079, powerMw: 3, reactorCost: 0.012 },
+  Prosonic: { ingotsPerSecond: 0.2, powerMw: 300, reactorCost: 0.013 },
+  Tellurium: { ingotsPerSecond: 0.342, powerMw: 400, reactorCost: 0.014 }
 }
 
 const yieldModuleDefs = {
   None: 1,
-  Regular: 1.091,
+  Vanilla: 1.09,
   Prosonic: 1.133,
   Tellurium: 1.212
 }
@@ -229,21 +229,32 @@ document.getElementById('ore-calc').addEventListener('click', () => {
   const amount = Math.max(0, Number(document.getElementById('ore-amount').value) || 0)
   const yieldCount = Math.max(0, Math.floor(Number(document.getElementById('yield-count').value) || 0))
   const speedCount = Math.max(0, Math.floor(Number(document.getElementById('speed-count').value) || 0))
-  const yieldMultiplier = yieldModuleDefs[yieldModuleSelect.value] ** yieldCount
-  const speedMultiplier = 1 + (speedModuleDefs[speedModuleSelect.value] * speedCount)
+  const totalModuleCount = yieldCount + speedCount
   const output = document.getElementById('ore-output')
-  const ingots = amount * refinery.ingotsPerOre * yieldMultiplier
-  const effectiveRate = refinery.ingotsPerSecond * yieldMultiplier * speedMultiplier
-  const refiningSeconds = amount * refinery.ingotsPerOre / (refinery.ingotsPerSecond * speedMultiplier)
 
   output.innerHTML = ''
+  if (totalModuleCount > 4) {
+    addSection(output, 'Module Configuration', [
+      ['Module slots selected', `${totalModuleCount} of 4`],
+      ['Status', 'A refinery can only hold four modules total. Reduce the yield or speed module count.']
+    ])
+    return
+  }
+
+  const yieldMultiplier = yieldModuleDefs[yieldModuleSelect.value] ** yieldCount
+  const speedMultiplier = 1 + (speedModuleDefs[speedModuleSelect.value] * speedCount)
+  const ingots = amount * ore.baseYield * yieldMultiplier
+  const effectiveRate = refinery.ingotsPerSecond * yieldMultiplier * speedMultiplier
+  const refiningSeconds = ingots / effectiveRate
+
   const frag = document.createDocumentFragment()
   addSection(frag, 'Refining Calculation', [
     ['Ore input', `${formatNumber(amount)} kg of ${oreName}`],
     ['Refinery tier', refineryTierSelect.value],
-    ['Base conversion', `${formatNumber(refinery.ingotsPerOre)} kg ${ore.ingot} per kg ore`],
+    ['Base conversion', `${formatNumber(ore.baseYield)} kg ${ore.ingot} per kg ore`],
     ['Yield modules', `${yieldCount} × ${yieldModuleSelect.value} (${formatNumber(yieldMultiplier * 100)}% output)`],
     ['Speed modules', `${speedCount} × ${speedModuleSelect.value} (${formatNumber(speedMultiplier * 100)}% speed)`],
+    ['Module slots', `${totalModuleCount} of 4`],
     ['Effective ingot rate', `${formatNumber(effectiveRate)} kg ${ore.ingot}/s`],
     ['Estimated refining time', formatDuration(refiningSeconds)],
     ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]

@@ -70,7 +70,7 @@
         </div>
         <div class="field">
           <label for="yield-count">Yield Modules Installed</label>
-          <input id="yield-count" type="number" min="0" step="1" value="0">
+          <input id="yield-count" type="number" min="0" max="4" step="1" value="0">
         </div>
         <div class="field">
           <label for="speed-module">Speed Module</label>
@@ -78,17 +78,17 @@
         </div>
         <div class="field">
           <label for="speed-count">Speed Modules Installed</label>
-          <input id="speed-count" type="number" min="0" step="1" value="0">
+          <input id="speed-count" type="number" min="0" max="4" step="1" value="0">
         </div>
         <button id="ore-calc">Calculate Ingots</button>
       </div>
-      <p class="input-note">Module counts are not capped yet. Refinery tiers and module effects use the supplied server benchmark values.</p>
+      <p class="input-note">Ore ratios are fixed by ore type. Yield and speed modules share four refinery slots total.</p>
       <section id="ore-results">
         <h2>Estimated Output</h2>
         <div id="ore-output" aria-live="polite"></div>
       </section>
     </section>
   </main>
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>
