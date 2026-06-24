@@ -27,4 +27,5 @@ button{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;
 .res-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
 .res-row b{color:#fff}
 .empty{padding:6px 0}
+.app-credit{margin:18px 0 0;text-align:center;color:var(--muted);font-size:12px}.app-credit strong{color:var(--accent);font-weight:600}.app-credit span{margin:0 5px;color:rgba(255,255,255,.35)}
 @media (max-width:640px){body{padding:12px}main{min-height:calc(100vh - 24px);padding:16px}.app-header{flex-direction:column;gap:16px}.tabs{width:100%}.tab{flex:1}}
