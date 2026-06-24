@@ -45,6 +45,15 @@ const oreDefs = {
   'Uranium Ore': { ingot: 'Uranium Ingot', baseYield: 0.01 }
 }
 
+const refineryDefs = {
+  Vanilla: { baseYieldMultiplier: 1 },
+  T1: { baseYieldMultiplier: 1.05 },
+  T2: { baseYieldMultiplier: 1.1 },
+  T3: { baseYieldMultiplier: 1.2 },
+  T4: { baseYieldMultiplier: 1.4 },
+  T5: { baseYieldMultiplier: 1.5 }
+}
+
 const yieldModuleDefs = {
   None: 1,
   Vanilla: 1.19,
@@ -202,10 +211,12 @@ function populateSelect(selectId, values) {
 }
 
 const yieldModuleSelect = populateSelect('yield-module', yieldModuleDefs)
+const refineryTierSelect = populateSelect('refinery-tier', refineryDefs)
 
 document.getElementById('ore-calc').addEventListener('click', () => {
   const oreName = oreSelect.value
   const ore = oreDefs[oreName]
+  const refinery = refineryDefs[refineryTierSelect.value]
   const amount = Math.max(0, Number(document.getElementById('ore-amount').value) || 0)
   const yieldCount = Math.max(0, Math.floor(Number(document.getElementById('yield-count').value) || 0))
   const output = document.getElementById('ore-output')
@@ -219,15 +230,18 @@ document.getElementById('ore-calc').addEventListener('click', () => {
     return
   }
 
-  const yieldMultiplier = yieldModuleDefs[yieldModuleSelect.value] ** yieldCount
-  const ingots = amount * ore.baseYield * yieldMultiplier
+  const moduleYieldMultiplier = yieldModuleDefs[yieldModuleSelect.value] ** yieldCount
+  const totalYieldMultiplier = refinery.baseYieldMultiplier * moduleYieldMultiplier
+  const ingots = amount * ore.baseYield * totalYieldMultiplier
 
   const frag = document.createDocumentFragment()
   addSection(frag, 'Refining Calculation', [
     ['Ore input', `${formatNumber(amount)} kg of ${oreName}`],
     ['Base conversion', `${formatNumber(ore.baseYield)} kg ${ore.ingot} per kg ore`],
-    ['Yield modules', `${yieldCount} × ${yieldModuleSelect.value} (${formatNumber(yieldMultiplier * 100)}% output)`],
+    ['Refinery tier', `${refineryTierSelect.value} (${formatNumber(refinery.baseYieldMultiplier * 100)}% base yield)`],
+    ['Yield modules', `${yieldCount} × ${yieldModuleSelect.value} (${formatNumber(moduleYieldMultiplier * 100)}% module yield)`],
     ['Module slots', `${yieldCount} of 4`],
+    ['Total yield', `${formatNumber(totalYieldMultiplier * 100)}%`],
     ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]
   ])
   output.appendChild(frag)

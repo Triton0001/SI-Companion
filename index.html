@@ -61,6 +61,10 @@
           <input id="ore-amount" type="number" min="0" step="any" value="1000">
         </div>
         <div class="field">
+          <label for="refinery-tier">Refinery Tier</label>
+          <select id="refinery-tier"></select>
+        </div>
+        <div class="field">
           <label for="yield-module">Yield Module</label>
           <select id="yield-module"></select>
         </div>
@@ -70,7 +74,7 @@
         </div>
         <button id="ore-calc">Calculate Ingots</button>
       </div>
-      <p class="input-note">Ore ratios are fixed by ore type. A refinery can hold up to four yield modules.</p>
+      <p class="input-note">Ore ratios are fixed by ore type. Refinery tier and up to four yield modules increase output.</p>
       <section id="ore-results">
         <h2>Estimated Output</h2>
         <div id="ore-output" aria-live="polite"></div>
@@ -80,6 +84,6 @@
   <footer class="app-credit">
     Data contributions: <strong>@TheBritishGeezer</strong> <span aria-hidden="true">·</span> <strong>@Oloros</strong>
   </footer>
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
