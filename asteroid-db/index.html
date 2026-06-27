@@ -17,7 +17,7 @@
         <span id="storageMode" class="storage-pill">Storage: checking...</span>
         <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
         <button id="exportJsonButton" type="button" title="Export database">Export</button>
-        <label class="file-button" title="Restore database backup">
+        <label id="restoreControl" class="file-button" title="Restore database backup">
           Restore
           <input id="importJsonInput" type="file" accept="application/json" />
         </label>
@@ -54,10 +54,6 @@
         <div>
           <span class="metric" id="totalCount">0</span>
           <span class="metric-label">saved points</span>
-        </div>
-        <div>
-          <span class="metric" id="sizeCount">0</span>
-          <span class="metric-label">asteroid sizes</span>
         </div>
         <div>
           <span class="metric" id="oreCount">0</span>

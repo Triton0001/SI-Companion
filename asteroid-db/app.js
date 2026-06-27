@@ -41,6 +41,7 @@ const state = {
 const els = {
   storageMode: document.querySelector("#storageMode"),
   editorKeyButton: document.querySelector("#editorKeyButton"),
+  restoreControl: document.querySelector("#restoreControl"),
   tabButtons: document.querySelectorAll(".tab-button"),
   importTab: document.querySelector("#importTab"),
   databasePanels: document.querySelectorAll('[data-view="database"]'),
@@ -51,7 +52,6 @@ const els = {
   preview: document.querySelector("#preview"),
   materialReview: document.querySelector("#materialReview"),
   totalCount: document.querySelector("#totalCount"),
-  sizeCount: document.querySelector("#sizeCount"),
   oreCount: document.querySelector("#oreCount"),
   searchInput: document.querySelector("#searchInput"),
   sizeFilter: document.querySelector("#sizeFilter"),
@@ -171,6 +171,7 @@ function renderEditorState() {
   els.editorKeyButton.title = editorEnabled
     ? "Editor controls are visible. Click to change or clear the key."
     : "Set editor key to show edit and delete controls.";
+  els.restoreControl.hidden = !editorEnabled;
 }
 
 function getEditorHeaders() {
@@ -525,7 +526,6 @@ function renderTabs() {
 
 function renderSummary() {
   els.totalCount.textContent = state.records.length.toLocaleString();
-  els.sizeCount.textContent = unique(state.records.map((record) => record.size)).length.toLocaleString();
   els.oreCount.textContent = unique(state.records.flatMap((record) => record.materials)).length.toLocaleString();
 }
 
