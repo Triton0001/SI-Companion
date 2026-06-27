@@ -2,8 +2,19 @@ const API_SETTING_KEY = "se-asteroid-db.api-root.v1";
 const EDITOR_KEY_STORAGE = "se-asteroid-db.editor-key.v1";
 const LEGACY_STORAGE_KEY = "se-asteroid-db.records.v1";
 const DUPLICATE_DISTANCE_METERS = 200;
+const KM_IN_METERS = 1000;
 const API_ROOT = getApiRoot();
 const CANONICAL_MATERIALS = ["Fe", "Ni", "Si", "Co", "Mg", "Ag", "Au", "Pt", "U", "Ice", "Stone"];
+const SECTOR_RULES = [
+  { name: "Kom Planet", x: 10000000, y: 17320000, z: 7000000, radius: 500 * KM_IN_METERS },
+  { name: "Tellus Planet", x: -10000000, y: 17320000, z: -3000000, radius: 250 * KM_IN_METERS },
+  { name: "Korrath", x: 0, y: 0, z: 0, radius: 800 * KM_IN_METERS },
+  { name: "Trelan Planet", x: -14150000, y: -14150000, z: -14150000, radius: 250 * KM_IN_METERS },
+  { name: "KoTH Sector", x: 14150000, y: -14150000, z: -14150000, radius: 200 * KM_IN_METERS },
+  { name: "Kom Space", x: 10000000, y: 17320000, z: 7000000, radius: 10000 * KM_IN_METERS },
+  { name: "Tellus Space", x: -10000000, y: 17320000, z: -3000000, radius: 10000 * KM_IN_METERS },
+  { name: "Roach Motel", x: 0, y: 0, z: 0, radius: 10000 * KM_IN_METERS },
+];
 const MATERIAL_ALIASES = {
   ag: "Ag",
   silver: "Ag",
@@ -54,6 +65,7 @@ const els = {
   totalCount: document.querySelector("#totalCount"),
   oreCount: document.querySelector("#oreCount"),
   searchInput: document.querySelector("#searchInput"),
+  sectorFilter: document.querySelector("#sectorFilter"),
   sizeFilter: document.querySelector("#sizeFilter"),
   materialFilter: document.querySelector("#materialFilter"),
   minRocksFilter: document.querySelector("#minRocksFilter"),
@@ -235,7 +247,7 @@ function isKnownMaterial(value) {
 function normalizeRecords(records) {
   return records.map((record) => {
     const materials = (record.materials || []).map(normalizeMaterial).filter(Boolean);
-    return {
+    const normalized = {
       ...record,
       id: record.id || createId(),
       x: Number(record.x),
@@ -250,7 +262,23 @@ function normalizeRecords(records) {
         `${record.gpsName}|${record.x}|${record.y}|${record.z}|${materials.join(",")}`,
       importedAt: record.importedAt || new Date().toISOString(),
     };
+    normalized.sector = classifySector(normalized);
+    return normalized;
   });
+}
+
+function classifySector(point) {
+  const x = Number(point.x);
+  const y = Number(point.y);
+  const z = Number(point.z);
+  if ([x, y, z].some((value) => Number.isNaN(value))) return "The Edge";
+
+  const match = SECTOR_RULES.find((sector) => {
+    const distance = Math.sqrt((x - sector.x) ** 2 + (y - sector.y) ** 2 + (z - sector.z) ** 2);
+    return distance <= sector.radius;
+  });
+
+  return match?.name || "The Edge";
 }
 
 function parseSurveyLog(text) {
@@ -276,6 +304,7 @@ function parseSurveyLog(text) {
       y: Number(y),
       z: Number(z),
       color,
+      sector: classifySector({ x, y, z }),
       size: detail.size,
       nodeType: detail.nodeType,
       nodeNumber: detail.nodeNumber,
@@ -531,6 +560,7 @@ function renderSummary() {
 }
 
 function renderFilterOptions() {
+  fillSelect(els.sectorFilter, "All sectors", unique(state.records.map((record) => record.sector)));
   fillSelect(els.sizeFilter, "All sizes", unique(state.records.map((record) => record.size)));
   fillSelect(els.materialFilter, "All materials", unique(state.records.flatMap((record) => record.materials)));
 }
@@ -581,6 +611,7 @@ function enrichDistance(record, origin) {
 
 function getFilteredRecords() {
   const search = els.searchInput.value.trim().toLowerCase();
+  const sector = els.sectorFilter.value;
   const size = els.sizeFilter.value;
   const material = els.materialFilter.value;
   const minRocks = Number(els.minRocksFilter.value || 0);
@@ -591,6 +622,7 @@ function getFilteredRecords() {
     .filter((record) => {
       const searchable = [
         record.gpsName,
+        record.sector,
         record.rawDetail,
         record.notes,
         record.x,
@@ -603,6 +635,7 @@ function getFilteredRecords() {
 
       return (
         (!search || searchable.includes(search)) &&
+        (!sector || record.sector === sector) &&
         (!size || record.size === size) &&
         (!material || record.materials.includes(material)) &&
         record.rockCount >= minRocks &&
@@ -678,6 +711,11 @@ function renderResults() {
     note.hidden = !record.notes;
 
     const chips = node.querySelector(".chips");
+    const sectorChip = document.createElement("span");
+    sectorChip.className = "chip sector-chip";
+    sectorChip.textContent = record.sector;
+    chips.append(sectorChip);
+
     const chipValues = record.materials.length ? record.materials : ["No material listed"];
     chipValues.forEach((material) => {
       const chip = document.createElement("span");
@@ -792,6 +830,7 @@ async function deleteRecord(id) {
 
 function resetFilters() {
   els.searchInput.value = "";
+  els.sectorFilter.value = "";
   els.sizeFilter.value = "";
   els.materialFilter.value = "";
   els.minRocksFilter.value = "";
@@ -847,6 +886,7 @@ els.importJsonInput.addEventListener("change", (event) => importJson(event).catc
 
 [
   els.searchInput,
+  els.sectorFilter,
   els.sizeFilter,
   els.materialFilter,
   els.minRocksFilter,

@@ -1,4 +1,16 @@
 const DUPLICATE_DISTANCE_METERS = 200;
+const KM_IN_METERS = 1000;
+
+const SECTOR_RULES = [
+  { name: "Kom Planet", x: 10000000, y: 17320000, z: 7000000, radius: 500 * KM_IN_METERS },
+  { name: "Tellus Planet", x: -10000000, y: 17320000, z: -3000000, radius: 250 * KM_IN_METERS },
+  { name: "Korrath", x: 0, y: 0, z: 0, radius: 800 * KM_IN_METERS },
+  { name: "Trelan Planet", x: -14150000, y: -14150000, z: -14150000, radius: 250 * KM_IN_METERS },
+  { name: "KoTH Sector", x: 14150000, y: -14150000, z: -14150000, radius: 200 * KM_IN_METERS },
+  { name: "Kom Space", x: 10000000, y: 17320000, z: 7000000, radius: 10000 * KM_IN_METERS },
+  { name: "Tellus Space", x: -10000000, y: 17320000, z: -3000000, radius: 10000 * KM_IN_METERS },
+  { name: "Roach Motel", x: 0, y: 0, z: 0, radius: 10000 * KM_IN_METERS },
+];
 
 const MATERIAL_ALIASES = {
   ag: "Ag",
@@ -39,7 +51,7 @@ export function json(payload, status = 200) {
 export async function readRecords(env) {
   const result = await env.DB.prepare(
     `SELECT id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-            rock_count, materials, notes, raw_detail, fingerprint, imported_at
+            rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector
        FROM asteroid_records
        ORDER BY imported_at DESC`,
   ).all();
@@ -51,8 +63,8 @@ export async function writeRecord(env, record) {
   await env.DB.prepare(
     `INSERT INTO asteroid_records (
       id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-      rock_count, materials, notes, raw_detail, fingerprint, imported_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       gps_name = excluded.gps_name,
       gps_line = excluded.gps_line,
@@ -68,7 +80,8 @@ export async function writeRecord(env, record) {
       notes = excluded.notes,
       raw_detail = excluded.raw_detail,
       fingerprint = excluded.fingerprint,
-      imported_at = excluded.imported_at`,
+      imported_at = excluded.imported_at,
+      sector = excluded.sector`,
   )
     .bind(
       record.id,
@@ -87,6 +100,7 @@ export async function writeRecord(env, record) {
       record.rawDetail || "",
       record.fingerprint,
       record.importedAt,
+      record.sector || classifySector(record),
     )
     .run();
 }
@@ -123,6 +137,7 @@ export function normalizeRecord(record) {
   normalized.fingerprint =
     record.fingerprint ||
     `${normalized.gpsName}|${normalized.x}|${normalized.y}|${normalized.z}|${materials.join(",")}`;
+  normalized.sector = classifySector(normalized);
 
   return normalized;
 }
@@ -153,8 +168,22 @@ export function normalizeMaterial(value) {
   return MATERIAL_ALIASES[key] || trimmed;
 }
 
+export function classifySector(point) {
+  const x = Number(point.x);
+  const y = Number(point.y);
+  const z = Number(point.z);
+  if ([x, y, z].some((value) => Number.isNaN(value))) return "The Edge";
+
+  const match = SECTOR_RULES.find((sector) => {
+    const distance = Math.sqrt((x - sector.x) ** 2 + (y - sector.y) ** 2 + (z - sector.z) ** 2);
+    return distance <= sector.radius;
+  });
+
+  return match?.name || "The Edge";
+}
+
 function rowToRecord(row) {
-  return {
+  return normalizeRecord({
     id: row.id,
     gpsName: row.gps_name,
     gpsLine: row.gps_line,
@@ -171,7 +200,8 @@ function rowToRecord(row) {
     rawDetail: row.raw_detail,
     fingerprint: row.fingerprint,
     importedAt: row.imported_at,
-  };
+    sector: row.sector,
+  });
 }
 
 function parseMaterials(value) {

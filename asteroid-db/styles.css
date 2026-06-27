@@ -401,6 +401,11 @@ p {
   color: #ffe2a1;
 }
 
+.sector-chip {
+  background: rgba(134, 172, 255, 0.15);
+  color: #d8e3ff;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
