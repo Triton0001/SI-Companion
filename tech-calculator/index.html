@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tech Calculator | SI Companion</title>
+  <link rel="stylesheet" href="../styles.css?v=5">
+</head>
+<body>
+  <div class="starfield" aria-hidden="true"></div>
+  <main class="app-shell">
+    <aside class="tool-sidebar" aria-label="SI Companion tools">
+      <div>
+        <h1>SI Companion</h1>
+        <p>Stone Industries tools</p>
+      </div>
+      <nav class="tool-nav" aria-label="Tools">
+        <a class="tool-nav-item" href="../">
+          <span>Home</span>
+          <small>Tool hub</small>
+        </a>
+        <a class="tool-nav-item is-active" href="./" aria-current="page">
+          <span>Tech</span>
+          <small>Crafting</small>
+        </a>
+        <a class="tool-nav-item" href="../refinery-calculator/">
+          <span>Refinery</span>
+          <small>Ore to ingots</small>
+        </a>
+        <a class="tool-nav-item" href="../asteroid-db/">
+          <span>Asteroids</span>
+          <small>GPS database</small>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="workspace">
+      <section class="tool-panel" id="tech-panel">
+        <div class="tool-heading">
+          <h2>SI Tech Calculator</h2>
+          <p>Calculate tech crafting requirements, time, and power use.</p>
+        </div>
+        <div class="controls">
+          <label for="tech">Tech Type</label>
+          <select id="tech">
+            <option>Common Tech</option>
+            <option>Rare Tech</option>
+            <option>Exotic Tech</option>
+            <option>Prosonic Tech</option>
+            <option>Tellurium Tech</option>
+          </select>
+
+          <label for="qty">Quantity</label>
+          <input id="qty" type="number" min="1" value="1">
+
+          <button id="calc">Calculate</button>
+        </div>
+
+        <section id="results">
+          <h2>Build Requirements</h2>
+          <div id="output"></div>
+        </section>
+      </section>
+    </div>
+  </main>
+  <footer class="app-credit">
+    Data contributions: <strong>@TheBritishGeezer</strong> <span aria-hidden="true">·</span> <strong>@Oloros</strong>
+  </footer>
+  <script src="../script.js?v=10"></script>
+</body>
+</html>

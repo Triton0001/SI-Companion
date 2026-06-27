@@ -1,14 +1,21 @@
 :root {
-  --bg: #0f1720;
-  --card: #0b1220;
-  --muted: #9aa4b2;
-  --accent: #7dd3fc;
-  --line: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
+  --bg: #071014;
+  --panel: rgba(15, 28, 34, 0.88);
+  --panel-strong: rgba(20, 38, 44, 0.96);
+  --line: rgba(190, 230, 232, 0.18);
+  --text: #edf7f4;
+  --muted: #9fb8b8;
+  --accent: #68d8bd;
+  --accent-2: #f6c85f;
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
 }
 
 * {
   box-sizing: border-box;
-  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 html,
@@ -17,21 +24,43 @@ body {
 }
 
 body {
+  min-width: 320px;
   margin: 0;
-  background: linear-gradient(180deg, #071029 0%, #0f1720 100%);
-  color: #e6eef6;
+  background:
+    radial-gradient(circle at 22% 10%, rgba(104, 216, 189, 0.16), transparent 34%),
+    radial-gradient(circle at 82% 6%, rgba(246, 200, 95, 0.13), transparent 28%),
+    linear-gradient(135deg, #061014 0%, #111a1e 48%, #071014 100%);
+  color: var(--text);
   padding: 24px;
 }
 
+.starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 1px, transparent 1.2px),
+    radial-gradient(circle, rgba(104, 216, 189, 0.7) 0 1px, transparent 1.3px);
+  background-position:
+    0 0,
+    40px 60px;
+  background-size:
+    130px 130px,
+    180px 180px;
+}
+
 .app-shell {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
   min-height: calc(100vh - 72px);
   width: 100%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(2, 6, 23, 0.6);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
@@ -40,7 +69,7 @@ body {
   align-content: start;
   gap: 18px;
   border-right: 1px solid var(--line);
-  background: rgba(3, 8, 18, 0.46);
+  background: rgba(2, 8, 10, 0.42);
   padding: 18px 12px;
 }
 
@@ -51,6 +80,7 @@ h2 {
 }
 
 .tool-sidebar h1 {
+  color: var(--text);
   font-size: 18px;
 }
 
@@ -71,9 +101,9 @@ h2 {
   display: grid;
   gap: 2px;
   width: 100%;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(2, 8, 10, 0.36);
   color: var(--muted);
   cursor: pointer;
   font: inherit;
@@ -84,8 +114,8 @@ h2 {
 
 .tool-nav-item:hover,
 .tool-nav-item.is-active {
-  background: rgba(125, 211, 252, 0.14);
-  border-color: rgba(125, 211, 252, 0.28);
+  background: rgba(104, 216, 189, 0.16);
+  border-color: rgba(104, 216, 189, 0.46);
   color: var(--accent);
 }
 
@@ -101,8 +131,72 @@ h2 {
 }
 
 .workspace {
+  background: rgba(15, 28, 34, 0.52);
   min-width: 0;
   padding: 22px;
+}
+
+.home-panel {
+  display: grid;
+  gap: 22px;
+}
+
+.home-heading {
+  max-width: 760px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 5px;
+  text-transform: uppercase;
+}
+
+.home-heading h2 {
+  font-size: clamp(2rem, 5vw, 4.1rem);
+  line-height: 0.96;
+}
+
+.home-heading p {
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.tool-card-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.tool-card {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  padding: 18px;
+  text-decoration: none;
+}
+
+.tool-card:hover {
+  border-color: rgba(104, 216, 189, 0.46);
+  background: rgba(20, 38, 44, 0.98);
+}
+
+.tool-card span {
+  color: var(--accent-2);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.tool-card p {
+  color: var(--muted);
+  margin: 0;
 }
 
 .tool-heading {
@@ -110,7 +204,7 @@ h2 {
 }
 
 .tool-heading .work-in-progress {
-  color: var(--accent);
+  color: var(--accent-2);
   font-weight: 600;
 }
 
@@ -134,31 +228,38 @@ h2 {
 
 .controls select,
 .controls input {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(2, 8, 10, 0.62);
+  color: var(--text);
   min-height: 38px;
   padding: 8px;
 }
 
 .controls select {
-  background: #fff;
-  color: #022;
+  background: rgba(2, 8, 10, 0.82);
+  color: var(--text);
 }
 
 .controls select option {
-  color: #022;
+  background: #071014;
+  color: var(--text);
 }
 
 button {
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #012;
+  border: 1px solid rgba(104, 216, 189, 0.4);
+  border-radius: 7px;
+  background: rgba(104, 216, 189, 0.12);
+  color: var(--text);
   cursor: pointer;
+  font-weight: 700;
   min-height: 38px;
   padding: 10px 14px;
+}
+
+button:hover {
+  border-color: var(--accent);
+  background: rgba(104, 216, 189, 0.2);
 }
 
 #results,
@@ -172,7 +273,8 @@ button {
 #output,
 #ore-output {
   margin-top: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--muted);
   min-height: 180px;
@@ -194,7 +296,7 @@ button {
 
 .result-section h3 {
   margin: 0 0 8px;
-  color: #e6eef6;
+  color: var(--text);
   font-size: 14px;
 }
 
@@ -202,12 +304,12 @@ button {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+  border-bottom: 1px dashed rgba(190, 230, 232, 0.12);
   padding: 6px 0;
 }
 
 .res-row b {
-  color: #fff;
+  color: var(--text);
 }
 
 .empty {
@@ -215,6 +317,8 @@ button {
 }
 
 .app-credit {
+  position: relative;
+  z-index: 1;
   margin: 18px 0 0;
   color: var(--muted);
   font-size: 12px;
@@ -228,7 +332,7 @@ button {
 
 .app-credit span {
   margin: 0 5px;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(190, 230, 232, 0.35);
 }
 
 @media (max-width: 760px) {

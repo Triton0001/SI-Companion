@@ -4,31 +4,58 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Space Engineers Asteroid Database</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260627-shell" />
   </head>
   <body>
     <div class="starfield" aria-hidden="true"></div>
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Space Engineers</p>
-        <h1>Asteroid Survey Database</h1>
-      </div>
-      <div class="header-actions">
-        <span id="userDisplay" class="storage-pill">User: pending</span>
-        <span id="storageMode" class="storage-pill">Storage: checking...</span>
-        <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
-        <button id="exportJsonButton" type="button" title="Export database">Export</button>
-        <label id="restoreControl" class="file-button" title="Restore database backup">
-          Restore
-          <input id="importJsonInput" type="file" accept="application/json" />
-        </label>
-      </div>
-    </header>
+    <div class="app-shell">
+      <aside class="tool-sidebar" aria-label="SI Companion tools">
+        <div>
+          <h1>SI Companion</h1>
+          <p>Stone Industries tools</p>
+        </div>
+        <nav class="tool-nav" aria-label="Tools">
+          <a class="tool-nav-item" href="../">
+            <span>Home</span>
+            <small>Tool hub</small>
+          </a>
+          <a class="tool-nav-item" href="../tech-calculator/">
+            <span>Tech</span>
+            <small>Crafting</small>
+          </a>
+          <a class="tool-nav-item" href="../refinery-calculator/">
+            <span>Refinery</span>
+            <small>Ore to ingots</small>
+          </a>
+          <a class="tool-nav-item is-active" href="./" aria-current="page">
+            <span>Asteroids</span>
+            <small>GPS database</small>
+          </a>
+        </nav>
+      </aside>
 
-    <nav class="tabs" aria-label="Asteroid database views">
-      <button class="tab-button active" type="button" data-tab="database">Database</button>
-      <button class="tab-button" type="button" data-tab="import">Import Survey</button>
-    </nav>
+      <div class="workspace">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Space Engineers</p>
+            <h1>Asteroid Survey Database</h1>
+          </div>
+          <div class="header-actions">
+            <span id="userDisplay" class="storage-pill">User: pending</span>
+            <span id="storageMode" class="storage-pill">Storage: checking...</span>
+            <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
+            <button id="exportJsonButton" type="button" title="Export database">Export</button>
+            <label id="restoreControl" class="file-button" title="Restore database backup">
+              Restore
+              <input id="importJsonInput" type="file" accept="application/json" />
+            </label>
+          </div>
+        </header>
+
+        <nav class="tabs" aria-label="Asteroid database views">
+          <button class="tab-button active" type="button" data-tab="database">Database</button>
+          <button class="tab-button" type="button" data-tab="import">Import Survey</button>
+        </nav>
 
     <main class="layout">
       <section id="importTab" class="import-panel tab-panel" hidden>
@@ -128,6 +155,8 @@
         <div id="results" class="results"></div>
       </section>
     </main>
+      </div>
+    </div>
 
     <dialog id="usernameDialog" class="username-dialog">
       <form id="usernameForm" method="dialog">

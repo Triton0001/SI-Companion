@@ -156,7 +156,9 @@ function addSection(parent, title, rows) {
   parent.appendChild(section)
 }
 
-document.getElementById('calc').addEventListener('click', () => {
+const techCalcButton = document.getElementById('calc')
+if (techCalcButton) {
+  techCalcButton.addEventListener('click', () => {
   const tech = document.getElementById('tech').value
   const qty = Math.max(1, parseInt(document.getElementById('qty').value || '1', 10))
   const out = document.getElementById('output')
@@ -189,18 +191,22 @@ document.getElementById('calc').addEventListener('click', () => {
   ])
 
   out.appendChild(frag)
-})
+  })
+}
 
 const oreSelect = document.getElementById('ore')
-Object.keys(oreDefs).forEach(name => {
-  const option = document.createElement('option')
-  option.value = name
-  option.textContent = name
-  oreSelect.appendChild(option)
-})
+if (oreSelect) {
+  Object.keys(oreDefs).forEach(name => {
+    const option = document.createElement('option')
+    option.value = name
+    option.textContent = name
+    oreSelect.appendChild(option)
+  })
+}
 
 function populateSelect(selectId, values) {
   const select = document.getElementById(selectId)
+  if (!select) return null
   Object.keys(values).forEach(name => {
     const option = document.createElement('option')
     option.value = name
@@ -213,7 +219,9 @@ function populateSelect(selectId, values) {
 const yieldModuleSelect = populateSelect('yield-module', yieldModuleDefs)
 const refineryTierSelect = populateSelect('refinery-tier', refineryDefs)
 
-document.getElementById('ore-calc').addEventListener('click', () => {
+const oreCalcButton = document.getElementById('ore-calc')
+if (oreCalcButton) {
+  oreCalcButton.addEventListener('click', () => {
   const oreName = oreSelect.value
   const ore = oreDefs[oreName]
   const refinery = refineryDefs[refineryTierSelect.value]
@@ -245,20 +253,28 @@ document.getElementById('ore-calc').addEventListener('click', () => {
     ['Estimated output', `${formatNumber(ingots)} kg ${ore.ingot}`]
   ])
   output.appendChild(frag)
-})
+  })
+}
+
+function activateToolPanel(panelId) {
+  document.querySelectorAll('[role="tab"]').forEach(button => {
+    const active = button.dataset.tab === panelId
+    button.classList.toggle('is-active', active)
+    button.setAttribute('aria-selected', active)
+  })
+  document.querySelectorAll('.tool-panel').forEach(panel => {
+    panel.hidden = panel.id !== panelId
+  })
+}
 
 document.querySelectorAll('[role="tab"]').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('[role="tab"]').forEach(button => {
-      const active = button === tab
-      button.classList.toggle('is-active', active)
-      button.setAttribute('aria-selected', active)
-    })
-    document.querySelectorAll('.tool-panel').forEach(panel => {
-      panel.hidden = panel.id !== tab.dataset.tab
-    })
-  })
+  tab.addEventListener('click', () => activateToolPanel(tab.dataset.tab))
 })
 
-document.getElementById('ore-calc').click()
+if (location.hash === '#ore-panel') {
+  activateToolPanel('ore-panel')
+}
 
+if (oreCalcButton) {
+  oreCalcButton.click()
+}
