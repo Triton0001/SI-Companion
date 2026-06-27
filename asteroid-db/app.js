@@ -526,7 +526,8 @@ function renderTabs() {
 
 function renderSummary() {
   els.totalCount.textContent = state.records.length.toLocaleString();
-  els.oreCount.textContent = unique(state.records.flatMap((record) => record.materials)).length.toLocaleString();
+  const oreTotal = state.records.reduce((total, record) => total + record.materials.length, 0);
+  els.oreCount.textContent = oreTotal.toLocaleString();
 }
 
 function renderFilterOptions() {
