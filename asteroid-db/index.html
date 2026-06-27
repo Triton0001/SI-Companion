@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Space Engineers Asteroid Database</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="starfield" aria-hidden="true"></div>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Space Engineers</p>
+        <h1>Asteroid Survey Database</h1>
+      </div>
+      <div class="header-actions">
+        <span id="storageMode" class="storage-pill">Storage: checking...</span>
+        <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
+        <button id="exportJsonButton" type="button" title="Export database">Export</button>
+        <label class="file-button" title="Restore database backup">
+          Restore
+          <input id="importJsonInput" type="file" accept="application/json" />
+        </label>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Asteroid database views">
+      <button class="tab-button active" type="button" data-tab="database">Database</button>
+      <button class="tab-button" type="button" data-tab="import">Import Survey</button>
+    </nav>
+
+    <main class="layout">
+      <section id="importTab" class="import-panel tab-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <h2>Import Survey Paste</h2>
+            <p>Paste the copied survey log exactly like the in-game output, then preview and save the GPS points.</p>
+          </div>
+          <button id="clearAllButton" class="danger" type="button" title="Clear all saved asteroid records">Clear All</button>
+        </div>
+
+        <textarea id="surveyPaste" spellcheck="false" placeholder="Paste the SURVEY LOG (GPS) text here..."></textarea>
+
+        <div class="import-actions">
+          <button id="parseButton" type="button">Preview Import</button>
+          <button id="saveButton" type="button" disabled>Save Parsed Points</button>
+          <p id="importStatus" role="status"></p>
+        </div>
+
+        <div id="preview" class="preview" hidden></div>
+        <div id="materialReview" class="material-review" hidden></div>
+      </section>
+
+      <aside class="summary-panel tab-panel" data-view="database">
+        <div>
+          <span class="metric" id="totalCount">0</span>
+          <span class="metric-label">saved points</span>
+        </div>
+        <div>
+          <span class="metric" id="sizeCount">0</span>
+          <span class="metric-label">asteroid sizes</span>
+        </div>
+        <div>
+          <span class="metric" id="oreCount">0</span>
+          <span class="metric-label">materials</span>
+        </div>
+      </aside>
+
+      <section class="filters-panel tab-panel" data-view="database">
+        <div class="panel-heading">
+          <div>
+            <h2>Search & Filters</h2>
+            <p>Find a node by name, GPS coordinate, asteroid size, material, rock count, or distance from base.</p>
+          </div>
+          <button id="resetFiltersButton" type="button" title="Reset filters">Reset</button>
+        </div>
+
+        <div class="filter-grid">
+          <label>
+            Search
+            <input id="searchInput" type="search" placeholder="Uranium, Survey_Huge, 13286386..." />
+          </label>
+          <label>
+            Size
+            <select id="sizeFilter">
+              <option value="">All sizes</option>
+            </select>
+          </label>
+          <label>
+            Material
+            <select id="materialFilter">
+              <option value="">All materials</option>
+            </select>
+          </label>
+          <label>
+            Minimum rocks
+            <input id="minRocksFilter" type="number" min="0" max="99" placeholder="Any" />
+          </label>
+          <label>
+            Base GPS
+            <input id="baseGpsInput" type="text" placeholder="GPS:Main Base Location:12563873.79:22013901.42:-595993.89:#FF75C9F1:" />
+          </label>
+          <label>
+            Max distance
+            <input id="maxDistanceFilter" type="number" min="0" step="100" placeholder="Any meters" />
+          </label>
+          <label>
+            Sort
+            <select id="sortSelect">
+              <option value="newest">Newest first</option>
+              <option value="distance">Nearest to base</option>
+              <option value="size">Size</option>
+              <option value="materials">Most materials</option>
+              <option value="rocks">Most rocks</option>
+              <option value="name">Name</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="results-panel tab-panel" data-view="database">
+        <div class="results-heading">
+          <h2>Survey Points</h2>
+          <span id="resultCount">0 matches</span>
+        </div>
+        <div id="results" class="results"></div>
+      </section>
+    </main>
+
+    <template id="recordTemplate">
+      <article class="record">
+        <div class="record-main">
+          <div class="record-title-row">
+            <h3></h3>
+            <span class="size-pill"></span>
+          </div>
+          <p class="detail"></p>
+          <p class="note" data-field="note"></p>
+          <div class="chips"></div>
+          <dl class="coords">
+            <div><dt>X</dt><dd data-coord="x"></dd></div>
+            <div><dt>Y</dt><dd data-coord="y"></dd></div>
+            <div><dt>Z</dt><dd data-coord="z"></dd></div>
+          </dl>
+          <div class="edit-panel" hidden>
+            <label>
+              Notes
+              <textarea data-edit="notes" rows="3" placeholder="Add roid notes..."></textarea>
+            </label>
+            <label>
+              Ores
+              <input data-edit="materials" type="text" placeholder="Fe, Ni, O2" />
+            </label>
+            <div class="edit-actions">
+              <button type="button" data-action="save-edit">Save Changes</button>
+              <button type="button" data-action="cancel-edit">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="record-actions">
+          <button type="button" data-action="copy">Copy GPS</button>
+          <button type="button" data-action="edit">Edit</button>
+          <button type="button" data-action="delete" class="danger">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js?v=20260627-cloudflare-d1"></script>
+  </body>
+</html>

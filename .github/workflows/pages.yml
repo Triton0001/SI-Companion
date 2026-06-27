@@ -32,6 +32,8 @@ jobs:
         run: |
           mkdir -p public
           cp index.html styles.css script.js public/
+          mkdir -p public/asteroid-db
+          cp asteroid-db/index.html asteroid-db/styles.css asteroid-db/app.js public/asteroid-db/
           touch public/.nojekyll
 
       - name: Upload Pages artifact

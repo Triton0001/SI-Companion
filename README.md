@@ -10,6 +10,8 @@ The calculator shows:
 - Raw resource totals.
 - T3 assembler time and uranium usage, based on a T3 assembler with 4 normal speed modules drawing 22.4 MW.
 
+The companion also includes an asteroid GPS database at `/asteroid-db/`. On Cloudflare Pages, asteroid data is stored in the shared D1 database through Pages Functions. On GitHub Pages or local files, the asteroid page falls back to browser-local storage unless it is opened with a shared API URL such as `?api=https://example.com/api`.
+
 Craft timing assumptions:
 
 - Common Tech: 6 seconds each
@@ -28,3 +30,15 @@ This project is ready to deploy as a static GitHub Pages site.
 
 After the first push, GitHub Pages will host the calculator at a URL like:
 `https://<username>.github.io/<repository>`
+
+## Publish on Cloudflare Pages with shared asteroid data
+
+Cloudflare Pages can host the companion and provide the shared asteroid API through Pages Functions and D1.
+
+1. Create a D1 database named `si-companion-asteroids`.
+2. Apply `migrations/0001_asteroid_records.sql` to that database.
+3. In the Cloudflare Pages project, bind the D1 database to the variable name `DB`.
+4. Add an environment variable named `EDITOR_KEYS` with one or more comma-separated editor keys.
+5. Deploy the repo.
+
+The asteroid app will call same-origin `/api/records` on Cloudflare Pages. Public users can view and import records. Edit, delete, and clear actions require an editor key entered in the app.
