@@ -14,6 +14,7 @@
         <h1>Asteroid Survey Database</h1>
       </div>
       <div class="header-actions">
+        <button id="userButton" type="button" title="Change username">User</button>
         <span id="storageMode" class="storage-pill">Storage: checking...</span>
         <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
         <button id="exportJsonButton" type="button" title="Export database">Export</button>
@@ -65,7 +66,7 @@
         <div class="panel-heading">
           <div>
             <h2>Search & Filters</h2>
-            <p>Find a node by name, GPS coordinate, asteroid size, material, rock count, or distance from base.</p>
+            <p>Find a node by name, GPS coordinate, sector, asteroid size, material, or distance from base.</p>
           </div>
           <button id="resetFiltersButton" type="button" title="Reset filters">Reset</button>
         </div>
@@ -92,10 +93,6 @@
             <select id="materialFilter">
               <option value="">All materials</option>
             </select>
-          </label>
-          <label>
-            Minimum rocks
-            <input id="minRocksFilter" type="number" min="0" max="99" placeholder="Any" />
           </label>
           <label>
             Base GPS
@@ -128,6 +125,18 @@
       </section>
     </main>
 
+    <dialog id="usernameDialog" class="username-dialog">
+      <form id="usernameForm" method="dialog">
+        <h2>Choose Username</h2>
+        <label>
+          Username
+          <input id="usernameInput" type="text" autocomplete="nickname" maxlength="32" required />
+        </label>
+        <p id="usernameError" class="form-error" role="alert"></p>
+        <button type="submit">Continue</button>
+      </form>
+    </dialog>
+
     <template id="recordTemplate">
       <article class="record">
         <div class="record-main">
@@ -136,6 +145,7 @@
             <span class="size-pill"></span>
           </div>
           <p class="detail"></p>
+          <p class="submitted-by" data-field="submittedBy"></p>
           <p class="note" data-field="note"></p>
           <div class="chips"></div>
           <dl class="coords">
@@ -166,6 +176,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260627-sector-labels"></script>
+    <script src="app.js?v=20260627-users"></script>
   </body>
 </html>

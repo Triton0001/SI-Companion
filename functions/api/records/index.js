@@ -3,6 +3,7 @@ import {
   isDuplicateRecord,
   json,
   normalizeRecord,
+  normalizeUsername,
   readRecords,
   requireEditor,
   writeRecord,
@@ -14,7 +15,13 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPost({ request, env }) {
   const payload = await request.json();
-  const incoming = (payload.records || []).map(normalizeRecord);
+  const submittedBy = normalizeUsername(request.headers.get("X-User-Name") || payload.submittedBy || "");
+  const incoming = (payload.records || []).map((record) =>
+    normalizeRecord({
+      ...record,
+      submittedBy: record.submittedBy || submittedBy || "Unknown",
+    }),
+  );
   const current = await readRecords(env);
   const fresh = [];
 

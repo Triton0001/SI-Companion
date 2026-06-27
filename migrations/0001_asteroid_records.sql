@@ -15,9 +15,11 @@ CREATE TABLE IF NOT EXISTS asteroid_records (
   raw_detail TEXT,
   fingerprint TEXT NOT NULL,
   imported_at TEXT NOT NULL,
-  sector TEXT NOT NULL DEFAULT 'The Edge'
+  sector TEXT NOT NULL DEFAULT 'The Edge',
+  submitted_by TEXT NOT NULL DEFAULT 'Unknown'
 );
 
 CREATE INDEX IF NOT EXISTS idx_asteroid_records_fingerprint ON asteroid_records (fingerprint);
 CREATE INDEX IF NOT EXISTS idx_asteroid_records_coords ON asteroid_records (x, y, z);
 CREATE INDEX IF NOT EXISTS idx_asteroid_records_sector ON asteroid_records (sector);
+CREATE INDEX IF NOT EXISTS idx_asteroid_records_submitted_by ON asteroid_records (submitted_by);

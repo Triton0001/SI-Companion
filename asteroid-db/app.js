@@ -1,5 +1,6 @@
 const API_SETTING_KEY = "se-asteroid-db.api-root.v1";
 const EDITOR_KEY_STORAGE = "se-asteroid-db.editor-key.v1";
+const USERNAME_STORAGE_KEY = "se-asteroid-db.username.v1";
 const LEGACY_STORAGE_KEY = "se-asteroid-db.records.v1";
 const DUPLICATE_DISTANCE_METERS = 200;
 const KM_IN_METERS = 1000;
@@ -22,22 +23,30 @@ const MATERIAL_ALIASES = {
   gold: "Au",
   co: "Co",
   cobalt: "Co",
+  cob: "Co",
   fe: "Fe",
+  ferrum: "Fe",
   iron: "Fe",
   ice: "Ice",
   water: "Ice",
+  mag: "Mg",
   mg: "Mg",
   magnesium: "Mg",
   ni: "Ni",
   nickel: "Ni",
+  nickle: "Ni",
   o2: "Ice",
   oxygen: "Ice",
+  plat: "Pt",
   pt: "Pt",
   platinum: "Pt",
   si: "Si",
+  sil: "Si",
   silicon: "Si",
   stone: "Stone",
   u: "U",
+  ur: "U",
+  uran: "U",
   uranium: "U",
 };
 
@@ -47,10 +56,12 @@ const state = {
   serverMode: Boolean(API_ROOT),
   activeTab: "database",
   materialMappings: {},
+  username: "",
 };
 
 const els = {
   storageMode: document.querySelector("#storageMode"),
+  userButton: document.querySelector("#userButton"),
   editorKeyButton: document.querySelector("#editorKeyButton"),
   restoreControl: document.querySelector("#restoreControl"),
   tabButtons: document.querySelectorAll(".tab-button"),
@@ -68,7 +79,6 @@ const els = {
   sectorFilter: document.querySelector("#sectorFilter"),
   sizeFilter: document.querySelector("#sizeFilter"),
   materialFilter: document.querySelector("#materialFilter"),
-  minRocksFilter: document.querySelector("#minRocksFilter"),
   baseGpsInput: document.querySelector("#baseGpsInput"),
   maxDistanceFilter: document.querySelector("#maxDistanceFilter"),
   sortSelect: document.querySelector("#sortSelect"),
@@ -78,6 +88,10 @@ const els = {
   resultCount: document.querySelector("#resultCount"),
   results: document.querySelector("#results"),
   template: document.querySelector("#recordTemplate"),
+  usernameDialog: document.querySelector("#usernameDialog"),
+  usernameForm: document.querySelector("#usernameForm"),
+  usernameInput: document.querySelector("#usernameInput"),
+  usernameError: document.querySelector("#usernameError"),
 };
 
 function getApiRoot() {
@@ -121,9 +135,11 @@ const sizeRank = {
 };
 
 async function init() {
+  loadUsername();
   await loadRecords();
   await migrateLegacyLocalRecords();
   render();
+  ensureUsername();
 }
 
 async function loadRecords() {
@@ -150,6 +166,67 @@ async function loadRecords() {
 function setStorageMode(label, title) {
   els.storageMode.textContent = `Storage: ${label}`;
   els.storageMode.title = title;
+}
+
+function loadUsername() {
+  state.username = normalizeUsername(localStorage.getItem(USERNAME_STORAGE_KEY) || "");
+}
+
+function normalizeUsername(value) {
+  return String(value)
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 32);
+}
+
+function getUsername() {
+  return state.username || "Unknown";
+}
+
+function saveUsername(value) {
+  const username = normalizeUsername(value);
+  if (username.length < 2) {
+    els.usernameError.textContent = "Use at least 2 characters.";
+    return false;
+  }
+
+  state.username = username;
+  localStorage.setItem(USERNAME_STORAGE_KEY, username);
+  els.usernameError.textContent = "";
+  renderUserState();
+  return true;
+}
+
+function ensureUsername() {
+  if (state.username) return;
+  openUsernameDialog();
+}
+
+function openUsernameDialog() {
+  els.usernameInput.value = state.username;
+  els.usernameError.textContent = "";
+
+  if (els.usernameDialog.showModal) {
+    els.usernameDialog.showModal();
+  } else {
+    els.usernameDialog.setAttribute("open", "");
+  }
+
+  els.usernameInput.focus();
+}
+
+function closeUsernameDialog() {
+  if (els.usernameDialog.open && typeof els.usernameDialog.close === "function") {
+    els.usernameDialog.close();
+  } else {
+    els.usernameDialog.removeAttribute("open");
+  }
+}
+
+function renderUserState() {
+  els.userButton.textContent = state.username ? `User: ${state.username}` : "Set User";
+  els.userButton.classList.toggle("active-key", Boolean(state.username));
+  els.userButton.title = state.username ? "Change username" : "Set username";
 }
 
 function getEditorKey() {
@@ -246,7 +323,9 @@ function isKnownMaterial(value) {
 
 function normalizeRecords(records) {
   return records.map((record) => {
-    const materials = (record.materials || []).map(normalizeMaterial).filter(Boolean);
+    const listedMaterials = (record.materials || []).map(normalizeMaterial).filter(Boolean);
+    const inferredMaterials = inferKnownMaterialsFromText([record.gpsName, record.rawDetail].filter(Boolean).join(" "));
+    const materials = unique([...listedMaterials, ...inferredMaterials]);
     const normalized = {
       ...record,
       id: record.id || createId(),
@@ -257,6 +336,7 @@ function normalizeRecords(records) {
       rockCount: Number(record.rockCount || 1),
       materials,
       notes: record.notes || "",
+      submittedBy: normalizeUsername(record.submittedBy || record.submitted_by || "") || "Unknown",
       fingerprint:
         record.fingerprint ||
         `${record.gpsName}|${record.x}|${record.y}|${record.z}|${materials.join(",")}`,
@@ -313,6 +393,7 @@ function parseSurveyLog(text) {
       rawDetail: detail.rawDetail,
       fingerprint,
       importedAt: new Date().toISOString(),
+      submittedBy: getUsername(),
     });
   }
 
@@ -341,10 +422,11 @@ function findDetailLine(lines, startIndex) {
 
 function parseDetail(detailLine, gpsName) {
   const [description = "", materialPart = ""] = detailLine.split("|").map((part) => part.trim());
-  const materials = materialPart
-    .split(",")
-    .map(normalizeMaterial)
-    .filter(Boolean);
+  const materials = unique([
+    ...inferKnownMaterialsFromText(gpsName),
+    ...inferKnownMaterialsFromText(description),
+    ...extractExplicitMaterialTokens(materialPart),
+  ]);
   const sizeFromDetail = description.match(/\b(Massive|Huge|Large|Medium|Small|Unknown)\b/i);
   const sizeFromName = gpsName.match(/Survey_(Massive|Huge|Large|Medium|Small|Unknown)/i);
   const rockMatch = description.match(/\[(\d+)\s+rocks?\]/i) || gpsName.match(/_x(\d+)(?:_|$)/i);
@@ -359,6 +441,31 @@ function parseDetail(detailLine, gpsName) {
     materials,
     rawDetail: rebuildDetail(description, materials),
   };
+}
+
+function inferKnownMaterialsFromText(text) {
+  return extractMaterialTokens(text, { includeUnknowns: false });
+}
+
+function extractExplicitMaterialTokens(text) {
+  return extractMaterialTokens(text, { includeUnknowns: true });
+}
+
+function extractMaterialTokens(text, { includeUnknowns }) {
+  if (!text) return [];
+
+  return text
+    .split(/[^a-zA-Z0-9]+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .map((token) => {
+      const normalized = normalizeMaterial(token);
+      if (isKnownMaterial(normalized)) return normalized;
+      if (!includeUnknowns) return "";
+      if (/^\d+$/.test(token) || /^x\d+$/i.test(token)) return "";
+      return token.length > 1 ? token : "";
+    })
+    .filter(Boolean);
 }
 
 function rebuildDetail(description, materials) {
@@ -484,12 +591,20 @@ function applyMaterialMappings(records) {
 }
 
 async function addRecords(records) {
-  const fresh = getFreshRecords(normalizeRecords(records));
+  const fresh = getFreshRecords(
+    normalizeRecords(records).map((record) => {
+      const submittedBy = normalizeUsername(record.submittedBy);
+      return {
+        ...record,
+        submittedBy: submittedBy && submittedBy !== "Unknown" ? submittedBy : getUsername(),
+      };
+    }),
+  );
 
   if (state.serverMode) {
     const response = await fetch(`${API_ROOT}/records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-User-Name": getUsername() },
       body: JSON.stringify({ records: fresh }),
     });
     if (!response.ok) throw new Error(`Save failed with ${response.status}`);
@@ -530,6 +645,7 @@ function unique(values) {
 
 function render() {
   renderTabs();
+  renderUserState();
   renderEditorState();
   renderSummary();
   renderFilterOptions();
@@ -614,7 +730,6 @@ function getFilteredRecords() {
   const sector = els.sectorFilter.value;
   const size = els.sizeFilter.value;
   const material = els.materialFilter.value;
-  const minRocks = Number(els.minRocksFilter.value || 0);
   const { origin, maxDistance } = getDistanceFilter();
 
   return state.records
@@ -623,6 +738,7 @@ function getFilteredRecords() {
       const searchable = [
         record.gpsName,
         record.sector,
+        record.submittedBy,
         record.rawDetail,
         record.notes,
         record.x,
@@ -638,7 +754,6 @@ function getFilteredRecords() {
         (!sector || record.sector === sector) &&
         (!size || record.size === size) &&
         (!material || record.materials.includes(material)) &&
-        record.rockCount >= minRocks &&
         (!origin || !maxDistance || record.distance <= maxDistance)
       );
     })
@@ -706,6 +821,8 @@ function renderResults() {
     ]
       .filter(Boolean)
       .join(" - ");
+    const submittedBy = node.querySelector('[data-field="submittedBy"]');
+    submittedBy.textContent = `Submitted by ${record.submittedBy || "Unknown"}`;
     const note = node.querySelector('[data-field="note"]');
     note.textContent = record.notes ? `Notes: ${record.notes}` : "";
     note.hidden = !record.notes;
@@ -833,7 +950,6 @@ function resetFilters() {
   els.sectorFilter.value = "";
   els.sizeFilter.value = "";
   els.materialFilter.value = "";
-  els.minRocksFilter.value = "";
   els.baseGpsInput.value = "";
   els.maxDistanceFilter.value = "";
   els.sortSelect.value = "newest";
@@ -844,7 +960,7 @@ function exportJson() {
   const payload = {
     exportedAt: new Date().toISOString(),
     app: "Space Engineers Asteroid Database",
-    version: 2,
+    version: 3,
     records: state.records,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -878,6 +994,16 @@ async function importJson(event) {
 els.parseButton.addEventListener("click", previewImport);
 els.surveyPaste.addEventListener("input", previewImport);
 els.saveButton.addEventListener("click", () => saveParsed().catch(showError));
+els.userButton.addEventListener("click", openUsernameDialog);
+els.usernameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (saveUsername(els.usernameInput.value)) {
+    closeUsernameDialog();
+  }
+});
+els.usernameDialog.addEventListener("cancel", (event) => {
+  if (!state.username) event.preventDefault();
+});
 els.editorKeyButton.addEventListener("click", setEditorKey);
 els.tabButtons.forEach((button) => button.addEventListener("click", () => setTab(button.dataset.tab)));
 els.resetFiltersButton.addEventListener("click", resetFilters);
@@ -889,7 +1015,6 @@ els.importJsonInput.addEventListener("change", (event) => importJson(event).catc
   els.sectorFilter,
   els.sizeFilter,
   els.materialFilter,
-  els.minRocksFilter,
   els.baseGpsInput,
   els.maxDistanceFilter,
   els.sortSelect,

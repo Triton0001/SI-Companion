@@ -19,22 +19,30 @@ const MATERIAL_ALIASES = {
   gold: "Au",
   co: "Co",
   cobalt: "Co",
+  cob: "Co",
   fe: "Fe",
+  ferrum: "Fe",
   iron: "Fe",
   ice: "Ice",
   water: "Ice",
+  mag: "Mg",
   mg: "Mg",
   magnesium: "Mg",
   ni: "Ni",
   nickel: "Ni",
+  nickle: "Ni",
   o2: "Ice",
   oxygen: "Ice",
+  plat: "Pt",
   pt: "Pt",
   platinum: "Pt",
   si: "Si",
+  sil: "Si",
   silicon: "Si",
   stone: "Stone",
   u: "U",
+  ur: "U",
+  uran: "U",
   uranium: "U",
 };
 
@@ -51,7 +59,7 @@ export function json(payload, status = 200) {
 export async function readRecords(env) {
   const result = await env.DB.prepare(
     `SELECT id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-            rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector
+            rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by
        FROM asteroid_records
        ORDER BY imported_at DESC`,
   ).all();
@@ -63,8 +71,8 @@ export async function writeRecord(env, record) {
   await env.DB.prepare(
     `INSERT INTO asteroid_records (
       id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-      rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       gps_name = excluded.gps_name,
       gps_line = excluded.gps_line,
@@ -81,7 +89,8 @@ export async function writeRecord(env, record) {
       raw_detail = excluded.raw_detail,
       fingerprint = excluded.fingerprint,
       imported_at = excluded.imported_at,
-      sector = excluded.sector`,
+      sector = excluded.sector,
+      submitted_by = excluded.submitted_by`,
   )
     .bind(
       record.id,
@@ -101,6 +110,7 @@ export async function writeRecord(env, record) {
       record.fingerprint,
       record.importedAt,
       record.sector || classifySector(record),
+      record.submittedBy || "Unknown",
     )
     .run();
 }
@@ -114,7 +124,9 @@ export async function clearRecords(env) {
 }
 
 export function normalizeRecord(record) {
-  const materials = unique((record.materials || []).map(normalizeMaterial).filter(Boolean));
+  const listedMaterials = (record.materials || []).map(normalizeMaterial).filter(Boolean);
+  const inferredMaterials = inferKnownMaterialsFromText([record.gpsName, record.gps_name, record.rawDetail, record.raw_detail].filter(Boolean).join(" "));
+  const materials = unique([...listedMaterials, ...inferredMaterials]);
   const normalized = {
     ...record,
     id: record.id || crypto.randomUUID(),
@@ -132,6 +144,7 @@ export function normalizeRecord(record) {
     notes: record.notes || "",
     rawDetail: normalizeDetail(record.rawDetail || record.raw_detail || "", materials),
     importedAt: record.importedAt || record.imported_at || new Date().toISOString(),
+    submittedBy: normalizeUsername(record.submittedBy || record.submitted_by || "") || "Unknown",
   };
 
   normalized.fingerprint =
@@ -182,6 +195,22 @@ export function classifySector(point) {
   return match?.name || "The Edge";
 }
 
+export function normalizeUsername(value) {
+  return String(value)
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 32);
+}
+
+function inferKnownMaterialsFromText(text) {
+  if (!text) return [];
+
+  return text
+    .split(/[^a-zA-Z0-9]+/)
+    .map((token) => normalizeMaterial(token))
+    .filter((token) => ["Fe", "Ni", "Si", "Co", "Mg", "Ag", "Au", "Pt", "U", "Ice", "Stone"].includes(token));
+}
+
 function rowToRecord(row) {
   return normalizeRecord({
     id: row.id,
@@ -201,6 +230,7 @@ function rowToRecord(row) {
     fingerprint: row.fingerprint,
     importedAt: row.imported_at,
     sector: row.sector,
+    submittedBy: row.submitted_by,
   });
 }
 

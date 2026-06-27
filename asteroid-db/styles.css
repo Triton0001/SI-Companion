@@ -80,6 +80,38 @@ button.active-key {
   color: #ffe2a1;
 }
 
+.username-dialog {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  padding: 0;
+  width: min(420px, calc(100% - 32px));
+}
+
+.username-dialog:not([open]) {
+  display: none;
+}
+
+.username-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.username-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin: 0;
+  min-height: 1.2em;
+}
+
 .danger {
   border-color: rgba(255, 124, 124, 0.42);
   background: rgba(255, 124, 124, 0.1);
@@ -313,7 +345,7 @@ p {
 }
 
 .filter-grid label:first-child,
-.filter-grid label:nth-child(6) {
+.filter-grid label:nth-child(5) {
   grid-column: span 2;
 }
 
@@ -417,9 +449,15 @@ p {
   margin: 5px 0 0;
 }
 
+.submitted-by,
 .note {
   color: #d8fff6;
   margin: 8px 0 0;
+}
+
+.submitted-by {
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .edit-panel {
@@ -517,7 +555,7 @@ dd {
   }
 
   .filter-grid label:first-child,
-  .filter-grid label:nth-child(6) {
+  .filter-grid label:nth-child(5) {
     grid-column: auto;
   }
 
