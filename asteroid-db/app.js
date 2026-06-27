@@ -3,7 +3,7 @@ const EDITOR_KEY_STORAGE = "se-asteroid-db.editor-key.v1";
 const LEGACY_STORAGE_KEY = "se-asteroid-db.records.v1";
 const DUPLICATE_DISTANCE_METERS = 200;
 const API_ROOT = getApiRoot();
-const CANONICAL_MATERIALS = ["Fe", "Ni", "Si", "Co", "Mg", "Ag", "Au", "Pt", "U", "O2", "Stone"];
+const CANONICAL_MATERIALS = ["Fe", "Ni", "Si", "Co", "Mg", "Ag", "Au", "Pt", "U", "Ice", "Stone"];
 const MATERIAL_ALIASES = {
   ag: "Ag",
   silver: "Ag",
@@ -13,14 +13,14 @@ const MATERIAL_ALIASES = {
   cobalt: "Co",
   fe: "Fe",
   iron: "Fe",
-  ice: "O2",
-  water: "O2",
+  ice: "Ice",
+  water: "Ice",
   mg: "Mg",
   magnesium: "Mg",
   ni: "Ni",
   nickel: "Ni",
-  o2: "O2",
-  oxygen: "O2",
+  o2: "Ice",
+  oxygen: "Ice",
   pt: "Pt",
   platinum: "Pt",
   si: "Si",
@@ -61,7 +61,6 @@ const els = {
   maxDistanceFilter: document.querySelector("#maxDistanceFilter"),
   sortSelect: document.querySelector("#sortSelect"),
   resetFiltersButton: document.querySelector("#resetFiltersButton"),
-  clearAllButton: document.querySelector("#clearAllButton"),
   exportJsonButton: document.querySelector("#exportJsonButton"),
   importJsonInput: document.querySelector("#importJsonInput"),
   resultCount: document.querySelector("#resultCount"),
@@ -153,11 +152,25 @@ function setEditorKey() {
   const value = next.trim();
   if (value) {
     localStorage.setItem(EDITOR_KEY_STORAGE, value);
-    els.importStatus.textContent = "Editor key saved in this browser.";
+    els.importStatus.textContent = "Editor key saved in this browser. Editor controls are visible.";
   } else {
     localStorage.removeItem(EDITOR_KEY_STORAGE);
-    els.importStatus.textContent = "Editor key cleared.";
+    els.importStatus.textContent = "Editor key cleared. Editor controls are hidden.";
   }
+  render();
+}
+
+function hasEditorKey() {
+  return Boolean(getEditorKey());
+}
+
+function renderEditorState() {
+  const editorEnabled = hasEditorKey();
+  els.editorKeyButton.textContent = editorEnabled ? "Editor Mode On" : "Editor Key";
+  els.editorKeyButton.classList.toggle("active-key", editorEnabled);
+  els.editorKeyButton.title = editorEnabled
+    ? "Editor controls are visible. Click to change or clear the key."
+    : "Set editor key to show edit and delete controls.";
 }
 
 function getEditorHeaders() {
@@ -487,6 +500,7 @@ function unique(values) {
 
 function render() {
   renderTabs();
+  renderEditorState();
   renderSummary();
   renderFilterOptions();
   renderResults();
@@ -650,6 +664,7 @@ function renderResults() {
 
   records.forEach((record) => {
     const node = els.template.content.firstElementChild.cloneNode(true);
+    const editorEnabled = hasEditorKey();
     node.querySelector("h3").textContent = record.gpsName;
     node.querySelector(".size-pill").textContent = `${record.size} - ${record.rockCount} rock${record.rockCount === 1 ? "" : "s"}`;
     node.querySelector(".detail").textContent = [
@@ -680,11 +695,15 @@ function renderResults() {
     node.querySelector('[data-coord="x"]').textContent = record.x.toLocaleString();
     node.querySelector('[data-coord="y"]').textContent = record.y.toLocaleString();
     node.querySelector('[data-coord="z"]').textContent = record.z.toLocaleString();
+    node.querySelector('[data-action="edit"]').hidden = !editorEnabled;
+    node.querySelector('[data-action="delete"]').hidden = !editorEnabled;
     node.querySelector('[data-action="copy"]').addEventListener("click", () => copyGps(record));
-    node.querySelector('[data-action="edit"]').addEventListener("click", () => openEditPanel(node, record));
-    node.querySelector('[data-action="save-edit"]').addEventListener("click", () => saveRecordEdits(node, record).catch(showError));
-    node.querySelector('[data-action="cancel-edit"]').addEventListener("click", () => closeEditPanel(node));
-    node.querySelector('[data-action="delete"]').addEventListener("click", () => deleteRecord(record.id));
+    if (editorEnabled) {
+      node.querySelector('[data-action="edit"]').addEventListener("click", () => openEditPanel(node, record));
+      node.querySelector('[data-action="save-edit"]').addEventListener("click", () => saveRecordEdits(node, record).catch(showError));
+      node.querySelector('[data-action="cancel-edit"]').addEventListener("click", () => closeEditPanel(node));
+      node.querySelector('[data-action="delete"]').addEventListener("click", () => deleteRecord(record.id));
+    }
     els.results.append(node);
   });
 }
@@ -781,24 +800,6 @@ function resetFilters() {
   renderResults();
 }
 
-async function clearAll() {
-  if (!state.records.length) return;
-  const confirmed = window.confirm("Clear every saved asteroid point from the shared database?");
-  if (!confirmed) return;
-
-  if (state.serverMode) {
-    const response = await fetch(`${API_ROOT}/records`, {
-      method: "DELETE",
-      headers: getEditorHeaders(),
-    });
-    await requireProtectedResponse(response, "Clear");
-  }
-
-  state.records = [];
-  await saveRecordsLocally();
-  render();
-}
-
 function exportJson() {
   const payload = {
     exportedAt: new Date().toISOString(),
@@ -840,7 +841,6 @@ els.saveButton.addEventListener("click", () => saveParsed().catch(showError));
 els.editorKeyButton.addEventListener("click", setEditorKey);
 els.tabButtons.forEach((button) => button.addEventListener("click", () => setTab(button.dataset.tab)));
 els.resetFiltersButton.addEventListener("click", resetFilters);
-els.clearAllButton.addEventListener("click", () => clearAll().catch(showError));
 els.exportJsonButton.addEventListener("click", exportJson);
 els.importJsonInput.addEventListener("change", (event) => importJson(event).catch(showError));
 

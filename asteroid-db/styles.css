@@ -69,6 +69,16 @@ button:disabled {
   opacity: 0.45;
 }
 
+button[hidden] {
+  display: none;
+}
+
+button.active-key {
+  background: rgba(246, 200, 95, 0.18);
+  border-color: var(--accent-2);
+  color: #ffe2a1;
+}
+
 .danger {
   border-color: rgba(255, 124, 124, 0.42);
   background: rgba(255, 124, 124, 0.1);
