@@ -1,6 +1,7 @@
 const API_SETTING_KEY = "se-asteroid-db.api-root.v1";
 const EDITOR_KEY_STORAGE = "se-asteroid-db.editor-key.v1";
 const USERNAME_STORAGE_KEY = "se-asteroid-db.username.v1";
+const USER_ID_STORAGE_KEY = "se-asteroid-db.user-id.v1";
 const LEGACY_STORAGE_KEY = "se-asteroid-db.records.v1";
 const DUPLICATE_DISTANCE_METERS = 200;
 const KM_IN_METERS = 1000;
@@ -57,11 +58,12 @@ const state = {
   activeTab: "database",
   materialMappings: {},
   username: "",
+  userId: "",
 };
 
 const els = {
   storageMode: document.querySelector("#storageMode"),
-  userButton: document.querySelector("#userButton"),
+  userDisplay: document.querySelector("#userDisplay"),
   editorKeyButton: document.querySelector("#editorKeyButton"),
   restoreControl: document.querySelector("#restoreControl"),
   tabButtons: document.querySelectorAll(".tab-button"),
@@ -75,6 +77,7 @@ const els = {
   materialReview: document.querySelector("#materialReview"),
   totalCount: document.querySelector("#totalCount"),
   oreCount: document.querySelector("#oreCount"),
+  userCount: document.querySelector("#userCount"),
   searchInput: document.querySelector("#searchInput"),
   sectorFilter: document.querySelector("#sectorFilter"),
   sizeFilter: document.querySelector("#sizeFilter"),
@@ -135,11 +138,14 @@ const sizeRank = {
 };
 
 async function init() {
-  loadUsername();
+  loadUserProfile();
   await loadRecords();
-  await migrateLegacyLocalRecords();
   render();
-  ensureUsername();
+  await ensureUsername();
+  if (state.username) {
+    await migrateLegacyLocalRecords();
+  }
+  render();
 }
 
 async function loadRecords() {
@@ -168,8 +174,9 @@ function setStorageMode(label, title) {
   els.storageMode.title = title;
 }
 
-function loadUsername() {
+function loadUserProfile() {
   state.username = normalizeUsername(localStorage.getItem(USERNAME_STORAGE_KEY) || "");
+  state.userId = localStorage.getItem(USER_ID_STORAGE_KEY) || "";
 }
 
 function normalizeUsername(value) {
@@ -183,22 +190,70 @@ function getUsername() {
   return state.username || "Unknown";
 }
 
-function saveUsername(value) {
+function getUserId() {
+  if (!state.userId) {
+    state.userId = createId();
+    localStorage.setItem(USER_ID_STORAGE_KEY, state.userId);
+  }
+  return state.userId;
+}
+
+async function saveUsername(value) {
   const username = normalizeUsername(value);
   if (username.length < 2) {
     els.usernameError.textContent = "Use at least 2 characters.";
     return false;
   }
 
+  if (state.serverMode) {
+    try {
+      await claimUsername(username);
+    } catch (error) {
+      els.usernameError.textContent = error.message;
+      return false;
+    }
+  }
+
   state.username = username;
   localStorage.setItem(USERNAME_STORAGE_KEY, username);
   els.usernameError.textContent = "";
   renderUserState();
+  await migrateLegacyLocalRecords();
+  render();
   return true;
 }
 
-function ensureUsername() {
-  if (state.username) return;
+async function claimUsername(username) {
+  const response = await fetch(`${API_ROOT}/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId: getUserId() }),
+  });
+
+  if (response.status === 409) {
+    throw new Error("That username is already taken.");
+  }
+
+  if (!response.ok) {
+    throw new Error(`Username check failed with ${response.status}`);
+  }
+}
+
+async function ensureUsername() {
+  if (state.username) {
+    if (!state.serverMode) return;
+
+    try {
+      await claimUsername(state.username);
+      return;
+    } catch (error) {
+      localStorage.removeItem(USERNAME_STORAGE_KEY);
+      state.username = "";
+      renderUserState();
+      els.usernameError.textContent = error.message;
+    }
+  }
+
   openUsernameDialog();
 }
 
@@ -224,9 +279,8 @@ function closeUsernameDialog() {
 }
 
 function renderUserState() {
-  els.userButton.textContent = state.username ? `User: ${state.username}` : "Set User";
-  els.userButton.classList.toggle("active-key", Boolean(state.username));
-  els.userButton.title = state.username ? "Change username" : "Set username";
+  els.userDisplay.textContent = state.username ? `User: ${state.username}` : "User: pending";
+  els.userDisplay.title = state.username ? "Signed in username for survey imports." : "Username required before importing.";
 }
 
 function getEditorKey() {
@@ -266,6 +320,10 @@ function renderEditorState() {
 function getEditorHeaders() {
   const key = getEditorKey();
   return key ? { "X-Editor-Key": key } : {};
+}
+
+function getUserHeaders() {
+  return { "X-User-Name": getUsername(), "X-User-Id": getUserId() };
 }
 
 async function requireProtectedResponse(response, action) {
@@ -337,6 +395,7 @@ function normalizeRecords(records) {
       materials,
       notes: record.notes || "",
       submittedBy: normalizeUsername(record.submittedBy || record.submitted_by || "") || "Unknown",
+      noteEntries: normalizeNoteEntries(record.noteEntries || record.note_entries || []),
       fingerprint:
         record.fingerprint ||
         `${record.gpsName}|${record.x}|${record.y}|${record.z}|${materials.join(",")}`,
@@ -345,6 +404,33 @@ function normalizeRecords(records) {
     normalized.sector = classifySector(normalized);
     return normalized;
   });
+}
+
+function normalizeNoteEntries(entries) {
+  const parsed = typeof entries === "string" ? parseJsonArray(entries) : entries;
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((entry) => ({
+      id: entry.id || createId(),
+      author: normalizeUsername(entry.author || entry.username || entry.submittedBy || "") || "Unknown",
+      text: normalizeNoteText(entry.text || entry.note || ""),
+      createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
+    }))
+    .filter((entry) => entry.text);
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeNoteText(value) {
+  return String(value).trim().replace(/\s+/g, " ").slice(0, 600);
 }
 
 function classifySector(point) {
@@ -604,7 +690,7 @@ async function addRecords(records) {
   if (state.serverMode) {
     const response = await fetch(`${API_ROOT}/records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-User-Name": getUsername() },
+      headers: { "Content-Type": "application/json", ...getUserHeaders() },
       body: JSON.stringify({ records: fresh }),
     });
     if (!response.ok) throw new Error(`Save failed with ${response.status}`);
@@ -673,6 +759,18 @@ function renderSummary() {
   els.totalCount.textContent = state.records.length.toLocaleString();
   const oreTotal = state.records.reduce((total, record) => total + record.materials.length, 0);
   els.oreCount.textContent = oreTotal.toLocaleString();
+  els.userCount.textContent = getContributorCount().toLocaleString();
+}
+
+function getContributorCount() {
+  const contributors = new Set();
+  state.records.forEach((record) => {
+    if (record.submittedBy && record.submittedBy !== "Unknown") contributors.add(record.submittedBy);
+    record.noteEntries.forEach((note) => {
+      if (note.author && note.author !== "Unknown") contributors.add(note.author);
+    });
+  });
+  return contributors.size;
 }
 
 function renderFilterOptions() {
@@ -739,6 +837,7 @@ function getFilteredRecords() {
         record.gpsName,
         record.sector,
         record.submittedBy,
+        record.noteEntries.map((noteEntry) => `${noteEntry.author} ${noteEntry.text}`).join(" "),
         record.rawDetail,
         record.notes,
         record.x,
@@ -826,6 +925,7 @@ function renderResults() {
     const note = node.querySelector('[data-field="note"]');
     note.textContent = record.notes ? `Notes: ${record.notes}` : "";
     note.hidden = !record.notes;
+    renderUserNotes(node.querySelector('[data-field="userNotes"]'), record.noteEntries);
 
     const chips = node.querySelector(".chips");
     const sectorChip = document.createElement("span");
@@ -854,6 +954,10 @@ function renderResults() {
     node.querySelector('[data-action="edit"]').hidden = !editorEnabled;
     node.querySelector('[data-action="delete"]').hidden = !editorEnabled;
     node.querySelector('[data-action="copy"]').addEventListener("click", () => copyGps(record));
+    node.querySelector('[data-action="add-note"]').addEventListener("submit", (event) => {
+      event.preventDefault();
+      addUserNote(node, record).catch(showError);
+    });
     if (editorEnabled) {
       node.querySelector('[data-action="edit"]').addEventListener("click", () => openEditPanel(node, record));
       node.querySelector('[data-action="save-edit"]').addEventListener("click", () => saveRecordEdits(node, record).catch(showError));
@@ -862,6 +966,77 @@ function renderResults() {
     }
     els.results.append(node);
   });
+}
+
+function renderUserNotes(container, noteEntries) {
+  container.innerHTML = "";
+  if (!noteEntries.length) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  noteEntries.forEach((entry) => {
+    const note = document.createElement("p");
+    note.className = "user-note";
+    const date = new Date(entry.createdAt);
+    const dateLabel = Number.isNaN(date.getTime()) ? "" : ` - ${date.toLocaleDateString()}`;
+    note.textContent = `${entry.author}${dateLabel}: ${entry.text}`;
+    container.append(note);
+  });
+}
+
+async function addUserNote(node, record) {
+  if (!state.username) {
+    openUsernameDialog();
+    els.importStatus.textContent = "Choose a username before adding notes.";
+    return;
+  }
+
+  const input = node.querySelector('[data-field="newNote"]');
+  const text = normalizeNoteText(input.value);
+  if (!text) {
+    els.importStatus.textContent = "Write a note before adding it.";
+    return;
+  }
+
+  await createRecordNote(record.id, text);
+  input.value = "";
+  els.importStatus.textContent = `Added note to ${record.gpsName}.`;
+  render();
+}
+
+async function createRecordNote(id, text) {
+  const entry = {
+    id: createId(),
+    author: getUsername(),
+    text,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (state.serverMode) {
+    const response = await fetch(`${API_ROOT}/records/${encodeURIComponent(id)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getUserHeaders() },
+      body: JSON.stringify({ note: text }),
+    });
+    if (!response.ok) throw new Error(`Note failed with ${response.status}`);
+    const payload = await response.json();
+    state.records = normalizeRecords(payload.records || []);
+    return;
+  }
+
+  state.records = normalizeRecords(
+    state.records.map((record) =>
+      record.id === id
+        ? {
+            ...record,
+            noteEntries: [...record.noteEntries, entry],
+          }
+        : record,
+    ),
+  );
+  await saveRecordsLocally();
 }
 
 function openEditPanel(node, record) {
@@ -994,12 +1169,14 @@ async function importJson(event) {
 els.parseButton.addEventListener("click", previewImport);
 els.surveyPaste.addEventListener("input", previewImport);
 els.saveButton.addEventListener("click", () => saveParsed().catch(showError));
-els.userButton.addEventListener("click", openUsernameDialog);
-els.usernameForm.addEventListener("submit", (event) => {
+els.usernameForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (saveUsername(els.usernameInput.value)) {
+  const submitButton = els.usernameForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  if (await saveUsername(els.usernameInput.value)) {
     closeUsernameDialog();
   }
+  submitButton.disabled = false;
 });
 els.usernameDialog.addEventListener("cancel", (event) => {
   if (!state.username) event.preventDefault();

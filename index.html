@@ -4,87 +4,99 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SI Companion</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
-  <main>
-    <header class="app-header">
+  <main class="app-shell">
+    <aside class="tool-sidebar" aria-label="SI Companion tools">
       <div>
         <h1>SI Companion</h1>
+        <p>Stone Industries tools</p>
       </div>
-      <nav class="tabs" aria-label="Tools" role="tablist">
-        <button class="tab is-active" type="button" id="tech-tab" role="tab" aria-selected="true" aria-controls="tech-panel" data-tab="tech-panel">Tech Calculator</button>
-        <button class="tab" type="button" id="ore-tab" role="tab" aria-selected="false" aria-controls="ore-panel" data-tab="ore-panel">Ore to Ingots</button>
-        <a class="tab-link" href="asteroid-db/">Asteroid Database</a>
+      <nav class="tool-nav" aria-label="Tools" role="tablist">
+        <button class="tool-nav-item is-active" type="button" id="tech-tab" role="tab" aria-selected="true" aria-controls="tech-panel" data-tab="tech-panel">
+          <span>Tech</span>
+          <small>Crafting</small>
+        </button>
+        <button class="tool-nav-item" type="button" id="ore-tab" role="tab" aria-selected="false" aria-controls="ore-panel" data-tab="ore-panel">
+          <span>Refinery</span>
+          <small>Ore to ingots</small>
+        </button>
+        <a class="tool-nav-item" href="asteroid-db/">
+          <span>Asteroids</span>
+          <small>GPS database</small>
+        </a>
       </nav>
-    </header>
+    </aside>
 
-    <section class="tool-panel" id="tech-panel" role="tabpanel" aria-labelledby="tech-tab">
-      <div class="tool-heading">
-        <h2>SI Tech Calculator</h2>
-        <p>Calculate tech crafting requirements, time, and power use.</p>
-      </div>
-      <div class="controls">
-      <label for="tech">Tech Type</label>
-      <select id="tech">
-        <option>Common Tech</option>
-        <option>Rare Tech</option>
-        <option>Exotic Tech</option>
-        <option>Prosonic Tech</option>
-        <option>Tellurium Tech</option>
-      </select>
+    <div class="workspace">
+      <section class="tool-panel" id="tech-panel" role="tabpanel" aria-labelledby="tech-tab">
+        <div class="tool-heading">
+          <h2>SI Tech Calculator</h2>
+          <p>Calculate tech crafting requirements, time, and power use.</p>
+        </div>
+        <div class="controls">
+          <label for="tech">Tech Type</label>
+          <select id="tech">
+            <option>Common Tech</option>
+            <option>Rare Tech</option>
+            <option>Exotic Tech</option>
+            <option>Prosonic Tech</option>
+            <option>Tellurium Tech</option>
+          </select>
 
-      <label for="qty">Quantity</label>
-      <input id="qty" type="number" min="1" value="1">
+          <label for="qty">Quantity</label>
+          <input id="qty" type="number" min="1" value="1">
 
-      <button id="calc">Calculate</button>
-    </div>
+          <button id="calc">Calculate</button>
+        </div>
 
-    <section id="results">
-      <h2>Build Requirements</h2>
-      <div id="output"></div>
-    </section>
-    </section>
-
-    <section class="tool-panel" id="ore-panel" role="tabpanel" aria-labelledby="ore-tab" hidden>
-      <div class="tool-heading">
-        <h2>Ore to Ingots</h2>
-        <p>Estimate ingot output after refinery yield modifiers.</p>
-        <p class="work-in-progress">Work in Progress - Beware values might be inaccurate</p>
-      </div>
-      <div class="controls">
-        <div class="field">
-          <label for="ore">Ore Type</label>
-          <select id="ore"></select>
-        </div>
-        <div class="field">
-          <label for="ore-amount">Ore Amount (kg)</label>
-          <input id="ore-amount" type="number" min="0" step="any" value="1000">
-        </div>
-        <div class="field">
-          <label for="refinery-tier">Refinery Tier</label>
-          <select id="refinery-tier"></select>
-        </div>
-        <div class="field">
-          <label for="yield-module">Yield Module</label>
-          <select id="yield-module"></select>
-        </div>
-        <div class="field">
-          <label for="yield-count">Yield Modules Installed</label>
-          <input id="yield-count" type="number" min="0" max="4" step="1" value="0">
-        </div>
-        <button id="ore-calc">Calculate Ingots</button>
-      </div>
-      <p class="input-note">Ore ratios are fixed by ore type. Refinery tier and up to four yield modules increase output.</p>
-      <section id="ore-results">
-        <h2>Estimated Output</h2>
-        <div id="ore-output" aria-live="polite"></div>
+        <section id="results">
+          <h2>Build Requirements</h2>
+          <div id="output"></div>
+        </section>
       </section>
-    </section>
+
+      <section class="tool-panel" id="ore-panel" role="tabpanel" aria-labelledby="ore-tab" hidden>
+        <div class="tool-heading">
+          <h2>Ore to Ingots</h2>
+          <p>Estimate ingot output after refinery yield modifiers.</p>
+          <p class="work-in-progress">Work in Progress - Beware values might be inaccurate</p>
+        </div>
+        <div class="controls">
+          <div class="field">
+            <label for="ore">Ore Type</label>
+            <select id="ore"></select>
+          </div>
+          <div class="field">
+            <label for="ore-amount">Ore Amount (kg)</label>
+            <input id="ore-amount" type="number" min="0" step="any" value="1000">
+          </div>
+          <div class="field">
+            <label for="refinery-tier">Refinery Tier</label>
+            <select id="refinery-tier"></select>
+          </div>
+          <div class="field">
+            <label for="yield-module">Yield Module</label>
+            <select id="yield-module"></select>
+          </div>
+          <div class="field">
+            <label for="yield-count">Yield Modules Installed</label>
+            <input id="yield-count" type="number" min="0" max="4" step="1" value="0">
+          </div>
+          <button id="ore-calc">Calculate Ingots</button>
+        </div>
+        <p class="input-note">Ore ratios are fixed by ore type. Refinery tier and up to four yield modules increase output.</p>
+        <section id="ore-results">
+          <h2>Estimated Output</h2>
+          <div id="ore-output" aria-live="polite"></div>
+        </section>
+      </section>
+    </div>
   </main>
   <footer class="app-credit">
     Data contributions: <strong>@TheBritishGeezer</strong> <span aria-hidden="true">·</span> <strong>@Oloros</strong>
   </footer>
-  <script src="script.js?v=7"></script>
+  <script src="script.js?v=8"></script>
 </body>
 </html>

@@ -460,6 +460,37 @@ p {
   font-size: 0.84rem;
 }
 
+.user-notes {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.user-notes[hidden] {
+  display: none;
+}
+
+.user-note {
+  border-left: 2px solid rgba(104, 216, 189, 0.44);
+  color: #d8fff6;
+  font-size: 0.88rem;
+  margin: 0;
+  padding-left: 10px;
+}
+
+.note-form {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 12px 0 0;
+}
+
+.note-form textarea {
+  margin-top: 0;
+  min-height: 64px;
+}
+
 .edit-panel {
   border-top: 1px solid var(--line);
   display: grid;
@@ -565,5 +596,9 @@ dd {
 
   .record-actions button {
     flex: 1;
+  }
+
+  .note-form {
+    grid-template-columns: 1fr;
   }
 }

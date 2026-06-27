@@ -59,7 +59,7 @@ export function json(payload, status = 200) {
 export async function readRecords(env) {
   const result = await env.DB.prepare(
     `SELECT id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-            rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by
+            rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by, note_entries
        FROM asteroid_records
        ORDER BY imported_at DESC`,
   ).all();
@@ -71,8 +71,8 @@ export async function writeRecord(env, record) {
   await env.DB.prepare(
     `INSERT INTO asteroid_records (
       id, gps_name, gps_line, x, y, z, color, size, node_type, node_number,
-      rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      rock_count, materials, notes, raw_detail, fingerprint, imported_at, sector, submitted_by, note_entries
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       gps_name = excluded.gps_name,
       gps_line = excluded.gps_line,
@@ -90,7 +90,8 @@ export async function writeRecord(env, record) {
       fingerprint = excluded.fingerprint,
       imported_at = excluded.imported_at,
       sector = excluded.sector,
-      submitted_by = excluded.submitted_by`,
+      submitted_by = excluded.submitted_by,
+      note_entries = excluded.note_entries`,
   )
     .bind(
       record.id,
@@ -111,6 +112,7 @@ export async function writeRecord(env, record) {
       record.importedAt,
       record.sector || classifySector(record),
       record.submittedBy || "Unknown",
+      JSON.stringify(record.noteEntries || []),
     )
     .run();
 }
@@ -145,6 +147,7 @@ export function normalizeRecord(record) {
     rawDetail: normalizeDetail(record.rawDetail || record.raw_detail || "", materials),
     importedAt: record.importedAt || record.imported_at || new Date().toISOString(),
     submittedBy: normalizeUsername(record.submittedBy || record.submitted_by || "") || "Unknown",
+    noteEntries: normalizeNoteEntries(record.noteEntries || record.note_entries || []),
   };
 
   normalized.fingerprint =
@@ -202,6 +205,45 @@ export function normalizeUsername(value) {
     .slice(0, 32);
 }
 
+export function getUsernameKey(username) {
+  return normalizeUsername(username).toLowerCase();
+}
+
+export async function getRegisteredUser(request, env) {
+  const username = normalizeUsername(request.headers.get("X-User-Name") || "");
+  const userId = String(request.headers.get("X-User-Id") || "").trim();
+  if (!username || !userId) return null;
+
+  const user = await env.DB.prepare(
+    `SELECT username, user_id
+       FROM asteroid_users
+      WHERE username_key = ?`,
+  )
+    .bind(getUsernameKey(username))
+    .first();
+
+  if (!user || user.user_id !== userId) return null;
+  return { username: user.username, userId: user.user_id };
+}
+
+export function normalizeNoteText(value) {
+  return String(value).trim().replace(/\s+/g, " ").slice(0, 600);
+}
+
+export function normalizeNoteEntries(entries) {
+  const parsed = typeof entries === "string" ? parseMaterials(entries) : entries;
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((entry) => ({
+      id: entry.id || crypto.randomUUID(),
+      author: normalizeUsername(entry.author || entry.username || entry.submittedBy || "") || "Unknown",
+      text: normalizeNoteText(entry.text || entry.note || ""),
+      createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
+    }))
+    .filter((entry) => entry.text);
+}
+
 function inferKnownMaterialsFromText(text) {
   if (!text) return [];
 
@@ -231,6 +273,7 @@ function rowToRecord(row) {
     importedAt: row.imported_at,
     sector: row.sector,
     submittedBy: row.submitted_by,
+    noteEntries: row.note_entries,
   });
 }
 

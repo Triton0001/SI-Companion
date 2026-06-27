@@ -14,7 +14,7 @@
         <h1>Asteroid Survey Database</h1>
       </div>
       <div class="header-actions">
-        <button id="userButton" type="button" title="Change username">User</button>
+        <span id="userDisplay" class="storage-pill">User: pending</span>
         <span id="storageMode" class="storage-pill">Storage: checking...</span>
         <button id="editorKeyButton" type="button" title="Set editor key">Editor Key</button>
         <button id="exportJsonButton" type="button" title="Export database">Export</button>
@@ -59,6 +59,10 @@
         <div>
           <span class="metric" id="oreCount">0</span>
           <span class="metric-label">ores found</span>
+        </div>
+        <div>
+          <span class="metric" id="userCount">0</span>
+          <span class="metric-label">users contributed</span>
         </div>
       </aside>
 
@@ -147,6 +151,11 @@
           <p class="detail"></p>
           <p class="submitted-by" data-field="submittedBy"></p>
           <p class="note" data-field="note"></p>
+          <div class="user-notes" data-field="userNotes"></div>
+          <form class="note-form" data-action="add-note">
+            <textarea data-field="newNote" rows="2" placeholder="Add note about ore amounts, access, or status..."></textarea>
+            <button type="submit">Add Note</button>
+          </form>
           <div class="chips"></div>
           <dl class="coords">
             <div><dt>X</dt><dd data-coord="x"></dd></div>
@@ -176,6 +185,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260627-users"></script>
+    <script src="app.js?v=20260627-unique-users"></script>
   </body>
 </html>

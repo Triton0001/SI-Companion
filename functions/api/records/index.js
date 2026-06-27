@@ -1,9 +1,9 @@
 import {
   clearRecords,
+  getRegisteredUser,
   isDuplicateRecord,
   json,
   normalizeRecord,
-  normalizeUsername,
   readRecords,
   requireEditor,
   writeRecord,
@@ -15,11 +15,15 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPost({ request, env }) {
   const payload = await request.json();
-  const submittedBy = normalizeUsername(request.headers.get("X-User-Name") || payload.submittedBy || "");
+  const user = await getRegisteredUser(request, env);
+  if (!user) {
+    return json({ error: "Registered username required" }, 401);
+  }
+
   const incoming = (payload.records || []).map((record) =>
     normalizeRecord({
       ...record,
-      submittedBy: record.submittedBy || submittedBy || "Unknown",
+      submittedBy: user.username,
     }),
   );
   const current = await readRecords(env);
